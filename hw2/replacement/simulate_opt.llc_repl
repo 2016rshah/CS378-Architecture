@@ -1,0 +1,73 @@
+#include "cache.h"
+#include "ooo_cpu.h"
+#include <fstream>
+
+using namespace std;
+
+// the trace file of cache accesses
+ifstream trace_file;
+
+/* returns the trace name, with .txt appended */
+char *get_trace_name() {
+    int i;
+    int len = strlen(ooo_cpu[0].trace_string);
+    for (i = len-1; i >= 0 && ooo_cpu[0].trace_string[i] != '/'; i--) ;
+    char *result = new char[len-i-6];
+    memcpy(result, &(ooo_cpu[0].trace_string[i+1]), len-i-10);
+    strcpy(result+len-i-10, ".txt");
+    return result;
+}
+
+/* initialize cache replacement state */
+void CACHE::llc_initialize_replacement()
+{
+    cout << "initializing OPT simulator ..." << endl;
+
+    /* open the cache reference trace file */
+    char *trace = get_trace_name();
+    const char *base = "/u/matthewp/traces/";
+    char *filename = new char[strlen(base)+strlen(trace)+1];
+    strcpy(filename, base);
+    strcpy(&(filename[strlen(base)]), trace);
+    delete trace;
+    cout << "reading cache references from: " << filename << endl;
+    trace_file = ifstream(filename);
+
+    // put your own initialization code here
+
+}
+
+/* find a cache block to evict
+ * return value should be 0 ~ 15 (corresponds to # of ways in cache) 
+ * current_set: an array of BLOCK, of size 16 */
+uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t pc, uint64_t full_addr, uint32_t type)
+{
+    /* don't modify this code or put anything above it;
+     * if there's an invalid block, we don't need to evict any valid ones */
+    for (int way = 0; way < LLC_WAY; way++) {
+        if (current_set[way].valid == false) {
+            return way;
+        }
+    }
+
+    // your eviction policy goes here
+
+    return 0;
+}
+
+/* called on every cache hit and cache fill */
+void CACHE::llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t pc, uint64_t victim_addr, uint32_t type, uint8_t hit, uint64_t latency, uint64_t effective_latency)
+{
+    // your code goes here
+
+}
+
+/* called at the end of the simulation */
+void CACHE::llc_replacement_final_stats()
+{
+    // close the trace file
+    trace_file.close();
+
+    // your code goes here
+
+}
