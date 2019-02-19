@@ -1,0 +1,154 @@
+Paper: Dynamic Branch Prediction with Perceptrons by Daniel A. Jimenez and Calvin Lin
+
+<b>Summary:</b>
+
+	Perceptrons are simple neural nets that can replace the PHT in traditional two-level global branch predictors. Because this represents a novel, orthoganal research direction, they can be used to complement the existing state-of-the-art. 
+
+	They have multiple benefits over traditional two level branch predictors:
+		 - Longer branch history
+		 - Linearly scaling hardware requirements as opposed to exponentially scaling requirements for two-level predictors
+
+	Perceptrons have multiple benefits over other neural networks so the only feasible ones:
+		 - very transparent compared to other neural nets
+		 - Adaline is less hardware efficient
+		 - Hebb is less accurate
+
+	They have a variety of limitations
+		- They can only learn linearly separable branches. Although they can still achieve high accuracy on linearly unseparable, they will never reach 100% accuracy like a gshare predictor can in theory. 
+
+
+	There are a variety of implementation tricks that make this approach feasible:
+		Limitation to -1 and 1 for inputs to the perceptron 
+			- addition rather than multiplication
+			- only need the sign bit
+			- transform and do the training loop in parallel
+
+<b>My thoughts:</b>
+	
+	I could have organized this paper better than the author did. Important points were hidden in the details of the paper, and the primary sections of the paper were repetitive without contributing to the reader's understanding. 
+
+	There were a lot of underexplained concepts introduced in this paper. I had some questions that limited my understanding (as opposed to questions that lead to future work). For example how is the function that the perceptron learns encoded into the bits stored for each branch? The paper claims "Since we allow the perceptron to learn over time, it can adapt to the non-linearity introduced by phase transitions in program behavior" but how does it adapt to this non-linearity? 
+
+	Underexplores a lot of topics (shouldn't mention if out of scope): "multiple neural architectures considered" like Abaline and Hebb, but no further discussion in paper. Linear separability of branches, but no broader context for why this distinction is valuable. Perceptrons have upper bound on how well they can learn a linearly inseparable function, but the paper doesn't explore what that upper bound is.
+
+<b>Questions/extensions:</b>
+
+	Paper claims perceptrons represent increased computational complexity, but are implemented efficiently wrt to area and delay. What about with respect to power?
+	
+	Are linearly separable branches a useful distinction in any domain other than the specific application of perceptrons? Is it worth exploring different classes of branches in a more general setting? 
+
+	Paper replaces the PHT with the perceptron table but still indexes into it with a hash function, etc. But how do the hash functions lead to positive, neutral, and negative interference in the training of the perceptrons? Is there a way to neutralize negative interference? 
+
+	Paper claims optimization of using the output of the perceptron as a magnitude of confidence, but also claims that it reduces latency by only computing the sign bit before making prediction. These are mutually exclusive, so the claims are a little bit misleading when made together.
+
+<b>Unstructured thoughts (don't read, only including for completeness sake):</b> 
+
+
+	Abstract
+	---
+	"perceptron": simplest possible neural net to beat two-bit counter
+
+	Key insight: long branch history because hardware resources scale linearly rather than exponential scaling of "purely dynamic schemes"
+
+	SPEC 2000 and improves misprediction by 10.1% over gshare
+
+	When traditional predictors do and do not perform well
+
+	Technique to bring latency down to one cycle
+
+	Intro
+	---
+	Orthogonal to traditional research into aliasing. Instead, replace tables of saturating counters with neural networks. Most would be "prohibitively expensive to implement as branch predictors". 
+
+	Instead use "perceptron". Each static branch is allocated its own perceptron to predict its outcome. What is the overhead per perceptron?
+
+	Class of "linearly separable branches", which are amenable to perceptrons and which are prevalent. 
+
+	Design space of two-level branch predictors based on perceptrons.
+
+	Delineate linearly separable or inseparable branches. 
+
+	2
+	---
+	Static branch prediction already exists in [3]. Better than other static approaches, but worse than most dynamic. 
+
+	Evolution of branch predictors. Unrelated, seemed like mentioned for completeness sake. 
+
+	Longer history lengths are expensive, and even if they could be implemented, they would lead to longer training times for traditional approaches. 
+
+	Variable length path branch prediction allows longer paths, but impractical. 
+
+	3
+	---
+
+	Describe perceptrons, explain how they can be used in branch prediction, and discuss their strengths and weaknesses. Our method is essentially a two-level predictor, replacing the pattem history table with a table of perceptrons.
+
+	Multiple neural architectures considered, but discarded (Adaline is less hardware efficient, Hebb is less accurate)
+
+	Perceptrons are very transparent compared to other neural nets.
+
+	How perceptrons work <- iffy
+
+	The perceptron learns a target boolean function of n inputs (seems like the pattern table to me). Each input is a bit of the global branch history (isn't this super innefficient to store the global branch history like that in every perceptron?)
+
+	Training perceptrons: some threshold at which training stops. Don't understand the training algorithm, though.
+
+	Perceptrons can only learn linearly separable boolean functions (i.e can learn logical AND but can't learn exclusive-OR). 
+
+	"Since we allow the perceptron to learn over time, it can adapt to the non-linearity introduced by phase transitions in program behavior". What is a phase transition? How does it adapt to non-linearity if it can't learn the hyperplane that doesn't exist??
+
+	Perceptrons have upper bound on how well they can learn a linearly inseparable function, but the paper doesn't explore what that upper bound is. Gshare can learn any function given unlimited training time. 
+
+	How is the function that the perceptron learns encoded into the bits stored for each branch??
+
+	Key insight: replace the PHT with the perceptron table. Still index into it with a hash function, etc. Extension: how do the hash functions lead to positive, neutral, and negative interference in the training of the perceptrons? Is there a way to neutralize negative interference? 
+
+	4 Design Space
+	---
+	History length: more accurate, but budget and aliasing
+
+	Representation of Weights: signed ints bc floating point sucks 
+
+	Threshold for training
+
+	5 Results
+	---
+	Results
+
+	Key insight: complementary contribution, so can still use a hybrid with gshare
+
+	Limitation: work is restricted to global pattern information, didn't even compare against per-branch schemes 
+
+	We find an interesting relationship between history length and threshold: the best threshold 0 for a given history length h is always exactly theta = floor(1.93h+14)
+
+	Since this is a global approach, how does it scale as the number of branches increases without bound?
+
+	"Any global branch prediction technique that uses a fixed amount of history information will have an optimal history length for a given set of benchmarks."
+
+	"training time is independent of history length"
+
+	"there is more destructive aliasing with perceptrons because they are larger, and thus fewer, than gshares two-bit counters and they can only learn linearly separable functions"
+
+	Extension: is there any other useful distinction about linearly separable branches other than perceptron performance? Is that generally applicable research area or specific to this implemntationa?
+
+	Gshare requires exponentially more bits, but the perceptrons are larger? How do we reconcile these two facts?
+
+	The output of the perceptron is a signed value that tells you confidence (is this a floating point? How big can this number get? Does it saturate)
+
+	Claims it is better on context switches, but only when it is used in hybrid, which was already noted in previous literature. Nothing in particular about this approach makes it more effective on context switches because warmup time is still long. "Figure 10 shows that context switching affects the perceptron predictor more significantly than the other two predictors". 
+
+	6 Implementation
+	---
+
+	Replace multiplication with addition because -1 and 1 are the only possible inputs to the perceptron. Only the sign bit of the output is used, so let the rest of the output be computed more slowly but proceed with the prediction. Limitation: if a possible strength is the value rather than just the sign bit, then the performance benefit is mutually exclusive. 
+
+	Do the training loop in parallel and transform the loop (again using the fact that the only inputs are -1 and 1)
+
+	"We believe [...] no more than two clock cycles to make a prediction". Why is this not reliably stated and only estimated?
+
+	Increased computational complexity, but implemented efficiently wrt to area and delay. What about wrt to power? 
+
+	7
+	---
+	History length of up to 62
+	My agree predictor idea was suggested in the conclusion

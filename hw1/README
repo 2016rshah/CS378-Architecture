@@ -1,0 +1,27 @@
+Making Your Own Branch Predictor
+--------------------------------
+In order to create your own branch predictor, take a look at branch/example.bpred.
+You can edit this file directly and rename it when you submit it, or you may create 
+new ones. Any branch predictors you write must end in the suffix ".bpred".
+
+Running Your Branch Predictor
+-----------------------------
+To evaluate how well your branch predictor performs, run the script "run_bp.sh" like so,
+
+    ./run_bp.sh my_branch_predictor
+
+where my_branch_predictor is the name of the code you want to run, excluding the ".bpred"
+suffix. The script will compile the simulator and run it, printing out the results after.
+Results are stored in the "output" folder, and can be printed neatly by running the 
+print_results scripts ("./print_results.py").
+
+Tips
+----
+You must be on a UTCS lab machine to run your code.
+
+If your text editor of choice doesn't seem to recognize the .bpred file as code,
+you'll have to change this. 
+For vim, you need to add this line to your .vimrc file:
+    au BufNewFile,BufReadPost *.bpred set syntax=cpp
+Feel free to reach out if you need help with the assignment.
+

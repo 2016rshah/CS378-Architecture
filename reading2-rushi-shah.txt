@@ -1,0 +1,35 @@
+Key takeaway: separate the notion of whether the branch is taken or not taken from the notion of how confident you are in your answer. 
+
+Interference
+	- neutral interference
+	- positive interference
+	- negative interference
+
+Assumption: "negative interference has serious impact on performance"
+
+Three approaches:
+	- Increasing predictor size, causing conflicting branches to map to different table locations.
+	- Selecting a history table indexing scheme that best distributes history state among the available counters.
+	- Separating different classes of branches so that they do not use the same prediction scheme, and thus cannot possibly interfere ("filtering" introduced by Chang et al. to use a simple predictor on simple branches to reduce the number of entries in PHT, which reduces interference)
+
+All of these prior approaches just try to reduce interference in general rather than specifically targetting negative interference. 
+
+"Agree Prediction": tries to turn negative into positive or neutral, rather than reducing interference as a whole
+
+Saturating counters encode the taken/not taken status and also the confidence into one value. So conflicting branches (one branch is taken another is not taken) that interfere will just destroy the confidence. 
+
+Instead, store the guess about taken/not taken separately for each branch individually (in something called a "bias bit") and then store the confidence in the saturating counters that stores how well those branches "agree" with their respective bias bits. 
+
+What if your bias bit is flawed, can we provide a mechanism to detect flawed bias bits and flip them to increase accuracy if you consistently decrement the agrees bit for the same branch?
+
+Does this require more bits of information as the number of branches increases? Because each branch needs a bias bit. How scalable is that?
+
+Programs with a larger "branch footprint" get the most benefit from reducing interference. Didn't entirely understand what constitutes a larger branch footprint because didn't understand what they said when they distignuished "static branches".
+
+Because the agree predictor uses the bias bit right off the bat rather than waiting for the saturating counters to saturate, it has a smaller warmup period. This is ideal for context switches. 
+
+Selecting the bias bit can use the result of the first time a branch is executed. This performance is comparable to using the most common result of execution for a branch, but both have comparable performance. Future work can explore alternative methods for selecting the bias bit more intelligently. 
+
+Improvement for two reasons:
+ 1. neutralizes negative interference
+ 2. prediction accuracy during warmup periods is improved

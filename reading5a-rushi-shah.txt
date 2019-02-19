@@ -1,0 +1,103 @@
+Paper: Sampling Dead Block Prediction for Last-Level Caches by Khan, Tian, Jimenez
+
+<b>Summary:</b>
+
+	A dead block is a cache block that has already been referenced for the last time but has not been evicted yet. Dead block prediction is important because it is safe to evict dead blocks, so removing those can reduce cache pressure. The existing state of the art for deadblock prediction is expensive because it stores information for every single cache block. This paper instead recommends sampling dead block prediction. This consists of essentially 2 things: (1) It samples the behavior of a few sets to find out which blocks end up being dead, and (2) It has a predictor that learns which blocks are dead.
+
+	The paper cites four main observations about the effectiveness of this technique, a few of which are reproduced here. The key insight is that dead block patterns are consistent across cache sets, so you can just sample a few cache sets to maintain a reasonable overhead. Also, temporal locality is filtered out by the time data arrives in the last level cache, so it is sufficient to only track the address of the last memory access which requires less metadata. 
+
+	Thus the paper addresses the issue of how to reduce the overhead of deadblock prediction mechanisms while preserving their accuracy. To that end it reveals two key insights: (1) sample instead of tracking the whole cache and (2) only use the PC because temporal locality will make any other tracking superfluous. 
+
+<b>My thoughts/questions/extensions:</b>
+
+	I did not think this was a particularly strong paper. I was initially confused because the paper didn't seem like very compelling research so I thought I was missing something. But as discussion developed on Piazza I realized I was only having trouble finding interesting ideas in the paper because the paper didn't have any particularly interesting ideas. 
+
+	Forgive me for reading ahead, but the related work section of the SHiP paper suitably explores the limitations of sampling dead block prediction. It states "Although Khan et al. claim that the LRU-based sampler is decoupled from the underlying cache insertion/replacement policy, our evaluations show that SDBP only improves performance for the two basic cache re- placement policies, random and LRU. SDBP also incurs significant hardware overhead." Also "SDBP updates re-reference predictions on the last accessing signature. SHiP on the other hand makes rereference predictions based on the signature that inserts the line into the cache. Correlating re-reference predictions to the “inser- tion” signature performs better than the “last-access” signature."
+
+	As I mentioned on piazza earlier, this paper exclusively predicts at the time of insertion rather than dynamically monitoring alive and dead lines so the predictor is not consulted on re-reference. This seems shortsighted so tuture work should (and ostensibly has) explore(d) the idea of monitoring cache lines at the time of insertion and at the time of re-reference.  
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Abstract
+---
+
+"sampling dead block prediction" tries to predict when a cache set in the last level cache will be dead and evicts that before going to the standard eviction policy
+
+Metrics: how much state is required and how much does it reduce the LLC misses. 
+
+Intro
+---
+
+A cache block is live from the time of its placement in the cache to the time of its last reference. From the last reference until the block is evicted the block is dead
+
+Current dead block prediction is lame because 
+	- lots of overhead
+	- reliant on underlying cache eviction policy rather than generally identifying the dead block
+	- destructive interference if trying to reduce overhead
+	- mid level caches filter out temporal locality, so predictors can't bank on that
+
+This paper suggests "sampling" which is based on four observations
+	- patterns are consistent across sets, so you can just sample a few
+	- (second reason isn't as convincing so didn't include)
+	- tracking address of last memory access is sufficient, requires less metadata and doesn't depend on temporal locality
+	- "skewed orgranization" can help (not defined in intro yet)
+
+Sampling Deadblock Predictor
+---
+- skewed predictor that uses multiple caches to avoid cache collisions
+
+Related work
+---
+Set dueling, DIP, and RRIP are all mentioned 
+
+
+Piazza Discussion:
+---
+Q1: 
+	I'm having trouble following the 5a paper about dead block prediction. My main confusion is that I just don't understand how dead block prediction works so it is hard for me to identify the contributions of this paper in particular. 
+
+	I understand what a dead block is. (A cache block that has already been referenced for the last time but has not been evicted yet). I understand why dead block prediction is important (it is safe to evict dead blocks, so removing those can reduce cache pressure). 
+
+	I don't entirely understand reftrace. The explanatory sentence in the related work section did not really clarify much for me: "This reference trace predictor (hereafter reftrace) collects a trace of instructions addresses that access a particular block on the theory that, if a trace leads to the last access for one block then the same trace will lead to the last access for other blocks." However, it doesn't seem super important, as long as I know the downsides of the existing state-of-the art, right? 
+
+	I start getting really lost at the Sampling Partial Tag Array section. "The sampling predictor keeps a small partial tag array, or sampler". But what is a small partial tag array? What is being tagged and for what purpose?
+
+	"However, predictor is only updated when there is an access or replacement in a cache set with a corresponding sampler set." How is the predictor updated? What value is being updated and how is the value being changed? 
+
+	The rest of the paper goes into an evaluation of the approach. I think I understand the gist of the evaluation (what metrics are being evaluated, how successful the sampling approach is, etc.) but I have no high level intuition about the technique being evaluated. Can someone please provide a broad overview of how dead block prediction works in general and what background knowledge I need for this paper? 
+A1:
+	Let's ignore the details of this particular paper for a second. The goal of a dead block predictor is to predict whether a line that you are inserting in the cache is dead or not. If the line is dead (meaning you are never going to use it while it sits in the cache), there is no point in inserting it in the cache and we can bypass it. So how do we predict whether a line is dead or not?
+
+	Reftrace says that if a line is accessed after a particular sequence of instructions (referred to as an instruction trace), it's likely to be dead. The intuition is that certain code paths don't lead to a line being reused (say a code path that checks for errors). You don't need to know any more about reftrace, except that it's expensive.
+
+	Coming back to this paper, it's essentially doing 2 things: (1) It samples the behavior of a few sets to find out which blocks end up being dead, and (2) It has a predictor that learns which blocks are dead.
+
+	Given this context, do you have any specific questions about the sampler or the predictor?
+Q2:
+	Thanks this was super helpful!
+
+	"Dead block predictor is to predict whether a line that you are inserting in the cache is dead or not". A line can be inserted, then re-accessed once, and then eventually evicted. I was under the impression that the line would be considered "live" when it is inserted, and as soon as it is re-referenced for the last time it is considered "dead" from that point forward. There's not really a big difference, but just to clarify are we are exclusively looking to predict at the time of insertion or we are dynamically monitoring alive and dead lines?
+
+	(On a side note: based on the notion of dead block prediction you outlined, would LIP just be "every block is assumed dead unless it is immediately re-accessed"?)
+
+	Based on point (1) my biggest question is: What behavior is the paper sampling? Like, for the few representative sets, what is the algorithm tracking? When I looked in the paper it answered that "The sampling predictor keeps a small partial tag array, or sampler", but I couldn't find an explanation of what the partial tags in this array represent so I've made no progress towards answering my question. This leads into my second question: 
+
+	Second question: you said "the predictor *learns* which blocks are dead". From the abstract we learn that this approach "samples program counters (PCs) to determine when a cache block is likely to be dead". Is this paper using the same approach as reftrace to learn which blocks are dead? As in it just uses the sequence of program counters to make the prediction? Is the key novelty the idea of using traditional techniques but only applying them to a sample of the sets or is the paper also trying to introduce a novel prediction algorithm as well? 
+A2:
+	"Are we are exclusively looking to predict at the time of insertion or we are dynamically monitoring alive and dead lines?"
+	 
+	You are right that that technically a line is considered dead after it's last re-reference, not just at the time of insertion. I think in this particular paper, they are looking to predict death only at the time of insertion (that is they want to identify lines that are dead-on-arrival). The predictor is not consulted on re-reference. This is, of course, just an implementation choice that the authors made. Papers we will read later will consult the predictor on both insertion and re-reference.
+
+	Would LIP just be "every block is assumed dead unless it is immediately re-accessed"?
+
+	Yes, that's a good way to look at it.
+
+	"What behavior is the paper sampling?"
+
+	They are essentially sampling the behavior of the LRU policy on some sampled sets. Would the line end up being dead or not in an LRU cache? If yes, let's train our predictor to learn that this line was dead and should be bypassed in the future.
+
+	"Is this paper using the same approach as reftrace to learn which blocks are dead? As in it just uses the sequence of program counters to make the prediction?"
+
+	The prediction algorithms are different. Reftrace looks at the sequence of program counters that led to a line being accessed, whereas they are looking at just the program counter that accessed this line. For example, let's say you executed PC1, PC2, PC3 before PC4 loaded a line. Reftrace would index the predictor with (PC1, PC2, PC3, PC4), whereas they would index the predictor with PC4 only.
+		

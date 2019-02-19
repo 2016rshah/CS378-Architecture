@@ -1,0 +1,7 @@
+bin
+obj
+logs
+scripts
+*.bak
+*.txt
+output/

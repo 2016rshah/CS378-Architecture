@@ -1,0 +1,66 @@
+Paper: Back to the Future: Leveraging Belady’s Algorithm for Improved Cache Replacement by Jain and Lin (Hawkeye)
+
+<b>Summary:</b>
+
+Belady's algorithm, the optimal solution for cache replacement, will evict cache lines that will be used the furthest in the future. However, knowledge of what lines will be needed the furthest in the future requires knowledge of the future. But this paper presents a novel way to reconstruct the optimal solution for the part of the program that has already been executed. Then, the paper outlines a way to leverage this historical optimal solution in a "Hawkeye predictor". Thus the paper presents two key ideas: an algorithm for constructing the historical optimal solution (OPTgen), and a predictor that bases decisions on this historical optimal solution (the Hawkeye predictor). Previous work has never suitably considered cache pressure as a feature that guides cache replacement. 
+
+OPTgen tracks "usage intervals" to represent the demands on the cache, "liveness intervals" to track the amount of time a block would live in the cache based on OPT, and uses an "occupancy vector" to track the overlapping liveness intervals at any point in time. The occupancy vector needs to store history of liveness intervals that extend back 8x the size of the cache. To do so it has two details that keep the hardware overhead feasible: (1) making each element of the occupancy vector represent four cache accesses and (2) using set duelling to only construct the OPT solution for 64 sets. (Still not super sure how this occupancy vector and the corresponding liveness intervals are constructed for OPT in implementation). 
+
+The Hawkeye predictor uses this OPT history to make predictions for the future. This predictor, from what I understand, has a saturating counter for each PC. If OPTgen says that a line X would be a cache hit under the optimal policy, then the last PC that accessed X would be incremented (and vice versa for a cache miss). Then this saturating counter is cut in half to determine the binary decision of "cache-friendly" or "cache-averse" for each PC. These hawkeye predictions are combined with information about their age into three bit RRIP counters. Training time is non-negligible, so the implementation can fall back to LRU during "phase-changes". 
+
+The approach is evaluated on two metrics: (1) how accurately does OPTgen simulate OPT and (2) how accurately does the predictor learn OPTgens behaviour. OPTgen simulates OPT pretty well, but the predictor doesn't learn OPTgen as well for two reasons: (1) the past doesn't always predict the future (2) the predictor may learn slowly or incorrectly due to resource limitations and training delay. Thus, future work should concentrate on leveraging OPTgen more effectively in the predictor, rather than improving OPTgen itself. 
+
+The guiding principle that differentiates this approach is that "Hawkeye can learn a different priority for each load PC. Since it is common for cache-friendly and cache-averse lines to occur simultaneously, any global cache priority is unlikely to perform as well as Hawkeye."
+
+<b>My thoughts/questions/extensions:</b>
+
+Reconstructing the past as a proxy for predicting the future seems super similar to profiling a program. Prior work in profiling could have been explored in the related work section. 
+
+Is OPT unique? It isn't, right, so OPTGen could be constructing any of the OPT solutions. How do you ensure it always constructs the same one rather than a mismatch of them? Is any one OPT solution better than any other in terms of actual measured performance? I ask because they are only optimal in terms of cache hits/misses, so there might be certain hits/misses that matter more than others. In this case, could you construct a weighted OPT that is based on weighted penalties assigned to misses? Would that lead to an alternative definition of a maximal OPT? 
+
+Training time seems like the biggest issue with this approach, because the implementation will fall back to LRU while the saturating counters are warming up. Could we leverage ideas like the agree predictor to reduce training time with constructive interference?
+
+Belady's algorithm seems similar to the classic algorithms problem of room scheduling. Is there any related work? Proofs of correctness, etc.? This is especially related to the idea I mentioned above about a weighted OPT solution (analagous to hard/soft constraints on room scheduling). 
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Belady's algorithm would be great, but requires knowledge of the future. Since that doesn't exist, we can use knowledge of the past as a proxy for the future. To make this feasible we need to store very long history lengths. Let's do that!
+
+Demand on the cache is a fundamental feature that must be considered
+
+Binary decision problem: is the incoming cache line "cache-friendly" or "cache-averse"
+
+Worth exploring profiling in the related work
+
+Hawkeye has two primary components: the OPTgen and the Hawkeye predictor. 
+
+OPTgen
+---
+
+OPTgen determines what would have been cached if the OPT policy had been used.
+	Tracks the "usage interval" which represents the demands on the cache
+	Also tracks the "liveness interval" which represents the time a block would live in cache based on OPT
+	Uses an "occupancy vector" to track the overlapping liveness intervals at any point in time
+
+Is OPT unique? It isn't, right, so OPTGen could be constructing any of the OPT solutions. How do you ensure it always constructs the same one rather than a mismatch of them. 
+
+This OPTgen works, but is expensive. There are two ways to reduce the expenses: (1) reduce the granularity of the timesteps that are being tracked and (2) use set duelling 
+
+Hawkeye Predictor
+---
+
+This predictor, from what I understand, has a saturating counter for each PC. If OPTgen says that a line X would be a cache hit under the optimal policy, then the last PC that accessed X would be incremented (and vice versa for a cache miss). Then this saturating counter is cut in half to determine the binary decision of cache friendly or cache averse
+
+When cache friendly lines are evicted, their PCs are detrained. This training and detraining corresponds to phase-changes, which Hawkeye is inneffective for so it falls back to LRU. BUt during specific phases, Hawkeye will excel .
+
+These hawkeye predictions are combined with information about their age into three bit RRIP counters. THe age is important because I think something like moving from MRU to LRU? Not sure, though. 
+
+To understand Hawkeye’s benefit, we observe that DRRIP learns a single policy for the entire cache, while DSB learns a single bypassing priority. By contrast, Hawkeye can learn a different priority for each load PC. Since it is common for cache-friendly and cache-averse lines to occur simultaneously, any global cache priority is unlikely to per- form as well as Hawkeye.
+
+Evaluated on two metrics: how accurately does OPTgen simulate OPT and how accurately does the predictor learn OPTgens behaviour. OPTgen simulates OPT pretty well, but the predictor doesn't learn OPTgen as well for two reasons: 
+	1) the past doesn't always predict the future
+	2) the predictor may learn slowly or incorrectly due to resource limitations and training delay
+
+Sampling is good not only for overhead, but also for the positive interference reducing the training delay
+

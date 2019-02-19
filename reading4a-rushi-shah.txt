@@ -1,0 +1,76 @@
+Paper: Adaptive Insertion Policies for High Performance Caching by Qureshi, Jaleel, Patt, Steely Jr., Emer. 
+
+<b>Summary:</b>
+
+	Cache replacement policies, necessary due to the limiting size of caches and the comparatively unbounded size of the working set, choose a victim to evict and then replace it with a target cache line when the cache gets full. Most prior work has focused on how to choose the ideal candidate to evict. However, this paper draws a distinction between victim selection and insertion policy. This paper proposes that simple changes to the insertion policy (aka where the incoming cache line is placed in the replacement list) can bring significant benefit to programs in which the working set exceeds the size of the cache. 
+
+	The primary tweak to the insertion policy the paper recommends is not treating a cache line as important until it has been used twice. More specifically "We propose the LRU Insertion Policy (LIP) which places all incoming lines in the LRU position. These lines are promoted from the LRU position to the MRU position only if they get referenced while in the LRU position." LRU stands for least recently used and MRU stands for most recently used. Traditionally, the least recently used cache line is the first to get evicted. 
+
+	A minor enhancement to the proposed LIP the paper also proposes is reverting to traditional LRU every small fixed proportion of the time to maintain the "aging mechanism" of LRU. This is called the Bimodal Insertion Policy (BIP) and is favored over the naive LIP. 
+
+	Finally, because BIP is ideal for memory-intensive programs, but LRU is ideal for programs with smaller working sets, it is worth selecting the cache replacement policy dynamically based on the program behavior. Thus, the paper recommends a Dynamic Insertion Policy (DIP) to choose between BIP and traditional LRU depending on which policy incurs fewer misses. The voting mechanism proposed selects candidate cache lines to approximate global cache behavior and just increments/decrements a saturating counter when the representative cache sets miss. 
+
+<b>My thoughts/questions/extensions:</b>
+	
+	The paper mentions that the primary limitation of LIP is the lack of an aging mechanism that traditional LRU implements. I don't understand why LIP/BIP don't have an aging mechanism? From what I understand, whenever a line is used from the LRU position, it will be promoted to the MRU position. When this hapens, all the other lines will be bumped down the recency stack like in the traditional approach, and the least recently used cache line will fall into the LRU position. Doesn't this represent aging? If that's not the approach the paper is suggesting, wouldn't that be a better idea to preserve the benefits of the least recently used policy? 
+
+	I don't understand how the cache warms up in the proposed solution. If all cache lines are placed into the LRU position and only graduate to MRU when they are rereferenced, wouldn't a cache line have to be used twice consecutively to ever escape the LRU position initially? 
+
+	The motivation for LRU is a repeating sequence of cache requests in the working set that exceed the size of the cache. This represents a pathological case because no cache line will ever be reused. Is there a similar pathological case for the proposed LIP approach? If I understand the warmup situation correctly, it would just be an alternating case where two cache lines alternate being brought into the LRU position. DIP should solve this issue, I suppose. 
+
+	The dynamic selection approach reminds me of the analagous issues in selecting a branch prediction algorithm based on the program behavior. For example, maintaining multiple hashing functions to bypass the hash collisions and using the multiple predictions to vote on taken/not taken. Could similar approaches solve the issue for dynamic cache replacement algorithms? This could be important after more cache replacement policies are developed because the proposed approach only works for two replacement policies (saturating counter can only go up or down).
+
+	How quickly can the dynamic approach adapt to the changing behavior of a program? What if the program behavior changes in intervals shorter than the latency of DIP recognizing the switch? Maybe a way to fix this is with a saturating counter with a lower bound, but that is a trade off because you might become too sensitive to noise. 
+
+	
+
+<b>Unstructured thoughts (don't read, only including for completeness sake):</b> 
+
+"The proposed insertion policies do not require any change to the existing cache structure, are trivial to implement, and have a storage requirement of less than two bytes."
+
+Ideally performs well for a wide variety of applications
+
+We propose the LRU Insertion Policy (LIP) which places all incoming lines in the LRU position. These lines are promoted from the LRU position to the MRU position only if they get referenced while in the LRU position.
+
+Key benefit: prevents trashing on workloads where the working set exceeds the size of the cache
+
+Does not require additional overhead for dueling, but what about the opportunity cost overhead. 
+
+Extensions points to the idea of cache dueling for dynamic cache eviction policies. Look into related work for dynamic branch predictors, voting, etc. 
+
+Separate into two parts: victim selection policy and insertion policy. 
+
+(Insertion policy decides where in the replacement list the incoming line is placed)
+
+Evaluated on SPEC CPU2000, 250M instructions
+
+Compulsory misses?
+
+Only promoted to the MRU position if it is used while in the LRU position (i.e brought into cache, and either used again immediately or used after a sequence of cache hits)
+
+What about a case where the cache is never actually populated? Warmup? Because it is put into the LRU spot, and if there is no cache hit before it is put in the cache will be completely ignored. 
+
+LRU does not have an "aging mechanism", because things aren't put into the MRU position. But I don't understand bc it will once LRU things get re-referenced, right? And then from there things should age normally. But that only happens when something is getting brought in, so maybe nothing ever gets pushed into LRU spot
+
+Performance based on benchmark, so BIP is good middle ground.
+
+BIP and LRU do better based on benchmark, so choose the insertion policy that has the fewest misses calculated dynamically per program. 
+
+DIP is global approach because it collects information about all sets
+
+Auxiliary Tag Directory (ATD) lets you record the performance of the competing policies. The policy selector (PSEL) is a saturating counter to keep track of which of the two ATD incurs fewer misses. 
+
+DIP-global requires substantial overhead of two extra tag directories (what is a tag directory?)
+
+Instead use Dynamic Set Sampling (DSS) which just approximates the cache behavior by sampling a few sets in the cache (go from thousands of sets to 32 in the ATD)
+
+Instead of DSS, which still needs aditional infrastructure, use "Set Dueling". Dedicate a few sets to policy 1 and a few sets to policy 2. When you miss in policy 1, decrement PSEL, and when you miss in policy 2, increment PSEL. 
+
+No additional overhead of voting except one saturating counter. And the cool part is that the only opportunity cost is that only the dedicated sets wasted when you use one policy over the other. 
+
+MRU 1 2 3 LRU
+
+ c  x y z  a  
+
+Pathalogical case? 
+

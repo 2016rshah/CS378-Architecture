@@ -1,0 +1,40 @@
+You have great freedom in your response, but the point is to encourage you to think critically about what
+you’ve read. You might ask clarifying questions, ask insightful questions, challenge assumptions, make new
+connections, contrast or relate the reading to other readings or programming assignments, identify aspects that
+you’d like to explore more deeply, or summarize the main points.
+
+Section 1
+=== Overview of branch prediction motivation, static versus dynamic, Backward Taken Forward Not Taken. Profiling versus Static Training Scheme? "Another dynamic scheme also proposed by Lee and Smith is the Static Training scheme [13] which uses the statistics collected from a pre-run of the program and a history pattern consisting of the last n run-time execution results of the branch to make a prediction." how is it called static if it depends on dynamic info? Isn't that just profiling? Claim about 93 -> 97 accuracy, but 100% reduction in mispredictions, how are those two values correlated? Difference between Branch Target Buffer and Two Level Adaptive Training?
+
+Section 2
+=== The Two Level Adaptive Training is what we talked about in class, which is what I understood, but then how does the Branch Target Buffer work? I understand the concept, but I don't really fully understand the constraints on what we can implement in hardware ("straightforward combinational logic circuit..."). "k bits are needed [...] for each branch" but num branches isn't bounded, so seems dangerous to try to store that much data in a static table, so a cache makes more sense, but that other idea the guy in class suggested was also good. Don't really understand the image in Figure 2 (automatons). Two Level Adaptive training is basically the same thing as the profiling solution in Static Training, only difference is it is applied on the fly. I don't understand the "State Transition Logic" part, but other than that I think I've got it.
+
+Section 3
+===
+Saving things per address is unfeasible, as noted earlier. As expected they solved this with a cache, but they made a distinction between a set-associative cache (AHRT) and a hash table (HHRT). Didn't pay much attention to the difference. Latency expected is the entire prediction in one cycle, but we are making two table lookups which is hard to fit. They have a solution, didn't really pay attention to what that was (I think they just store it when it is computed rather than when it is needed but idk where they store it). Also the other problem they mention is speculating twice in a row, which they say only happens in a very specific case, where it is safe to predict the taken branch anyways so nbd.
+
+Section 4
+===
+Methodology and Simulation Model
+
+Standard stuff about the training/test data, the setup for the schemes tested, etc.
+
+Section 5
+===
+Results/Takeaways
+
+5.1: Two Level Adaptive Training
+--- What are the State Transition Automata? Are they options or are all four of them required? IHRT vs AHRT vs HHRT is as expected in terms of more complexity brings better performance. History register length: there's an asymptote, as expected. Size of cache and the history length are the two parameters that can be adjusted.
+
+5.2: Static Training
+--- State transition logic in pattern table is simpler in Static Training, but that is really the only benefit you get. Comparable performance when training set matches test set, obviously.
+
+5.3: Other Schemes
+--- Eh things exist, but they suck.
+
+Section 6
+===
+
+Conclusion
+
+Disappointed the paper didn't mention the warmup time for the predictor in Two Level Adaptive Training.

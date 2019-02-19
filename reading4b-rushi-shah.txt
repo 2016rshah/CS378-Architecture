@@ -1,0 +1,87 @@
+Paper: High Performance Cache Replacement Using Re-Reference Interval Prediction (RRIP) by Jaleel, Theobald, Steely Jr., Emer
+
+<b>Summary:</b>
+
+Previous work in the cache replacement space has been either focused on exploiting temporal locality (LRU) or on rectifying cache thrashing (DIP). But real world access patterns are a mix of near-immediate re-references (that need to stay in the cache) and distant re-references (that shouldn't stay in the cache), so DIP and LRU are both insufficient respectively. 
+
+This paper introduces the notion of Re-Reference Interval Prediction to satisfy the space of programs that have mixed use re-references. It does so by keeping track of a saturating counter called the re-reference prediction value (RRPV) for each cache block that is M bits long (empiracally M=2 suffices). Lower values imply the block must stay in the cache, higher values mean it should be a candidate for eviction. 
+
+A hit promotion policy (either hit priority or frequency priority) governs how the RRPV values are updated as the program runs. For example, the counter can be decremented when a cache block is used. SRRIP, which is static with respect to cache hits and misses, is susceptible to thrashing when the working set exceeds the size of the cache. Bimodal RRIP fixes this problem by occasionally inserting cache blocks with a default value that is different from the typical default value. But because this new approach can decrease performance in cases where thrashing isn't a problem, DRRIP dynamically chooses between SRRIP and BRRIP using set duelling. 
+	
+
+<b>My thoughts/questions/extensions:</b>
+	
+	The abstract mentions that "RRIP requires 2X less hardware than LRU", which seems like a significantly more compelling benefit than 4-10% increase in throughput, and yet that is far less emphasized in the body of the paper. Is hardware considered so cheap that it does not motivate research results? Is this a field-specific priority or is this paper undervaluing hardware costs?
+
+	The design changes seem played down. For example, it seems nontrivial to find the entry that has the highest value rather than just looking for any value that has a specific bit set when you are trying to evict a cache line.	
+
+	"DRRIP can degrade performance when the cost of a miss varies in an application." This seems like a promising direction for research: prioritizing certain cache hits at the expense of lesser value cache misses because some cache misses are more expensive than others. The main problem I see is finding an effective hueristic for which cache requests are how expensive. 
+
+	"In the event that RRIP is unable to find a block with a distant re-reference interval, RRIP updates the re-reference predictions by incrementing the RRPVs of all blocks in the cache set and repeats the search until a block with a distant re-reference interval is found." This sounds like a potential pathological case. Consider, for example, if there is a large amount of stuff that is all the same level of prediction, and so a lot of tie breakers will cause their prediction to go way back. But then a new value is put in at a fixed spot, so the mean, median etc. are moving up with the contention but the default value is staying fixed. Could that be unfair for the new values that didn't have to deal with that contention? If this is a problem, it might make more sense to make the default value for long, intermediate, distant re-reference intervals etc. relative to the current values in the RRIP chain rather than relative only to the number of bits being stored. The paper currently makes these values only depend on the number of bits being stored: for example if M bits are being stored, the paper says that "We use an RRPV of 2M–2 to represent a long re-reference interval."
+
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Abstract
+---
+
+The re-reference interval is approximated in LRU to be less than the time to get from the MRU position to the LRU position, but this doesn't work for memory-intensive programs. This paper instead proposes novel approaches, one static and one dynamic, (no mention of what the methods are) that improve throughput by 4-10% and require 2x less hardware than LRU. 
+
+Intro
+---
+
+New formulation of the LRU chain that represents the order in which blocks are predicted to be re-referenced. The block at the head of the RRIP chain is predicted to have a near-immediate re-reference interval while a distant re-reference interval implies that the block will be re-referenced in the distant future. 
+
+RRIP will basically store an M-bit register per cache block that stores the "Re-reference Prediction Value (RRPV)" that says how soon the cache block is expected to be re-used. The one with the RRPV that is the furthest away should be evicted first. 
+
+Motivation
+---
+
+Scan resistant replacement algorithm
+
+Filtered temporal locality
+
+[... ] there is room to improve LRU for thrashing and mixed access patterns. DIP [25] addresses the cache thrashing problem by preserving some of the working set in the cache. Unfortunately, DIP only targets workloads that have a working set larger than the available cache and relies on LRU for all other workloads.""
+
+Related Work
+---
+
+
+RRIP Proposal
+---
+
+"Since always predicting a near-immediate or a distant re-reference interval at cache insertion time is not robust across all access patterns, RRIP always inserts new blocks with a long re-reference interval. A long re-reference interval is defined as an intermediate re-reference interval that is skewed towards a distant re-reference interval. We use an RRPV of 2M–2 to represent a long re-reference interval. The intuition behind always predicting a long re-reference interval on cache insertion is to prevent cache blocks with re-references in the distant future from polluting the cache." this is basically the same intuition as the LIP paper. 
+
+"In the event that RRIP is unable to find a block with a distant re-reference interval, RRIP updates the re-reference predictions by incrementing the RRPVs of all blocks in the cache set and repeats the search until a block with a distant re-reference interval is found." wait this sounds so sketchy because if there is a large amount of stuff that is all the same level of prediction, a lot of tie breakers will cause their prediction to go way back. But then a new value is put in at a fixed spot, so the mean, median etc. are moving but the default is staying the same. Could that be unfair for the new values that didn't have to deal with that contention?
+
+
+hit promotion policy
+
+static in this case refers to statically wrt cache hits and misses, not program runtime
+
+SRRIP can cause thrashing, so bad, fix with bimodal rrip (every so often revert to long instead of distant) and then use dynamic set duelling to choose which one to use bc BRRIP will degrade performance on sets that don't thrash. 
+
+RRIP chain is kind of like a priority list for eviction, but where do you insert things onto the chain is a configurable questions
+
+SPEC 2006, and real world examples, 250M instructions
+
+Since DRRIP optimizes for the cache miss metric and not the throughput metric, DRRIP can degrade performance when the cost of a miss varies in an application.
+	-> speaks to the idea of things that should be pinned to the cache because they are more expensive misses
+
+SSRIP is the most applicable to the last level cache where the temporal locality is filtered by smaller levels of the hierarchy
+
+
+
+Methodology 
+---
+
+Results & Analysis
+---
+Design changes do seem rather significant because you need to find the entry that has the highest value rather than just looking for any value that has a specific bit set. 
+
+Conclusion
+---
+
+Maybe I'm just not familiar with scale, but 4-7% throughput doesn't seem like that great of an improvement...
+

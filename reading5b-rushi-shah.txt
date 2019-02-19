@@ -1,0 +1,120 @@
+Paper: SHiP: Signature-based Hit Predictor for High Performance Caching by Wu, Jaleel, Hasenplaugh, Martonosi, Steely Jr., Emer
+
+<b>Summary:</b>
+
+The RRIP paper introduces a fundmental research direction, so this paper aims to find better ways to predict and update the re-reference interval on cache insertions and cache hits. Rather than assigning the same interval prediction to every incoming cache line, SHiP uses "signatures" to categorize incoming cache lines and learn the best predictions for those categories. This modification to cache replacement policies empirically outperforms other state-of-the-art replacement policies by doubling the speedup over LRU when compared to, for example, sampling deadblock prediction. 
+
+The paper explores three possible signature schemes (SHiP-Mem, SHiP-PC, SHiP-ISeq) but discards one (SHiP-Mem) because it underperforms compared to the other two. The key insight for SHiP-PC and SHiP-ISeq  is that whether or not a cache line will be used is really based on what instruction it is (SHiP-PC) and what instructions preceded it (SHiP-ISeq). 
+
+These signatures are used to index into a Signature History Counter Table (SHCT) of saturating counters that learn the re-reference interval for that signature. The saturating counters are updated on cache hits and evictions. Then the signature history counter table is consulted on cache misses to predict re-reference interval on incoming cache line. 
+
+There are two fundamental optimizations at play in implementation of SHiP: 1) more hardware commitments can lead to better performance, but expenses/feasability are limiting factors and 2) accuracy can come at the expense of longer warmup times (an important distinction here is drawn between private and shared caches). 
+
+<b>My thoughts/questions/extensions:</b>
+
+There are no new ideas in computer architecture research. This paper represents an important milestone in cache replacement policy and I'm not downplaying the contributions (I think it was a good paper), but it is really just a re-hash (re-*hash*) of the research that played out in branch prediction. 
+
+Along that train of thought, the corresponding improvements of branch predictors may find analogs in the following research in cache replacement. For example, the agree predictor separated the notion of the prediction and the confidence from the saturating counters to address destructive aliasing. In shared caches destructive aliasing of the SHCT is a big problem mentioned in this paper, so perhaps a similar approach can address that issue, with the added benefit of shrinking warmup times. 
+
+The paper claims that SHiP is not limited to a specific replacement policy, but rather can be used in conjunction with any ordered replacement policy. SHiP requires no changes to the cache promotion or victim selection policies; it just makes the re-reference interval prediction, you can evict based on those numbers however you want. But doesn't that make it dependent on the RRIP framework for cache eviction? And if you make re-reference interval predictions, isn't there only one sane way to evict based on those predictions (evict longest prediction)? So the policy-agnostic claim seems dubious to me. 
+	
+"Extensions of SHiP to update re-reference predictions on cache hits (rather than just cache insertions) are left for future work." Why? It seems like low hanging fruit that wouldn't warrant another paper but deserves to be included in this work. 
+
+"There are significantly fewer unique PCs in SPEC applications (10s to 100s) than in multimedia, games, and server workloads (1,000s to 10,000s)" This is a serious indictment, and it is worth reevaluating previous papers based on this observation. 
+
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Abstract
+---
+Goal: best predict the re-reference pattern of an incoming cache line
+
+Contribution 1: correlate the re-reference behavior of a cache line with a unique signature
+
+Signature possibilities: memory region, program counter, and/or instruction sequence history
+
+Extension: neural network based on these three inputs
+
+Contribution 2: Signature-based Hit Predictor to learn the re-reference behavior of cache lines belonging to each signature. 
+
+Compare against baseline LRU and other state-of-the-art replacement policies
+
+Claims: less hardware overhead and more better performance
+
+Intro
+---
+
+CMP stands for chip multiprocessor. 
+
+Motivation: improve RRIP by finding better ways to predict and update re-reference interval on cache insertions and cache hits
+
+Fundamental challenge: practical mechanism that can accurately predict the re-reference interval of a cache line on cache insertions
+
+Finer granularity signatures on cache references and use buckets of signatures to bucket the re-reference intervals
+
+Bucket with three signatures: SHiP-Mem (memory region), SHiP-PC (program counter), SHiP-ISeq (instruction sequence)
+
+Use signatures to index into a Signature History Counter Table (SHCT) of saturating counters that learn the re-reference interval for that signature. SHCT updated on hits and evictions. Then SHCT is consulted on cache misses to predict re-reference interval on incoming cache line. 
+
+Claim: SHiP is not limited to a specific replacement policy, but rather can be used in conjunction with any ordered replacement policy. (But doesn't it definitely need RRIP because it is predicted re-reference intervals?)
+
+SHiP-Mem is the worst of the three. Empirical results show better than other papers in the same area (like DRRIP)
+
+Can we use something like set dueling to combine all three of the signature types? Or would that not work bc you would need to store a SHCT for all of the options all the time? -> See section 7.1
+
+Warmup time for signatures and SHCT?
+
+3.1
+---
+Increment on hits, decrement on misses. But won't hits happen way more often than misses? So won't values be almost entirely positive and take a long time to go back to zero? Maybe it should be a weighted update (decrements are heavier)
+
+Overhead: signature and outcome
+
+SHiP requires no changes to the cache promotion or victim selection policies (so doesn't that make it dependent on that policy?)
+	- question answered in next paragraph. It just makes the re-reference interval prediction, you can evict based on those numbers however you want. But like there is really only one sane way to do it
+
+"Extensions of SHiP to update re-reference predictions on cache hits (rather than just cache insertions) are left for future work." Why? It doesn't seem that hard
+
+3.2
+---
+Memory region signature: "[these signatures] generate accurate re-reference predictions if all references to a given memory region have a typical access pattern (e.g. scans)"
+
+Program Counter Signature: "identify frequently-missing instructions" but what are examples? Answer in paper just need to find it
+
+Instruction Sequence History Signature: bitstring about whether instruction was a load/store instruction or not. Capture similar information as PC, but might be more compact
+
+Methodology, Evaluation, Results
+---
+
+Starting at section 5, SHiP-Mem is kind of dropped
+
+
+Private caches versus shared caches
+
+
+Aliasing within sequential applications is mostly constructive, but for multiprogramming workloads aliasing becomes more complicated. Constructive aliasing reduces training time. But also destructive aliasing is bad. So they investigate Per-core Private versus Shared SHCT. Per-core private is best for multiprogrammed workloads, but this would be a good direction for future work because the potential benefits of constructive aliasing are actually beneficial (compared to how beneficial they were for branch prediction)
+
+SHCT size
+	- could making it too large lead to too long of warm up time? I.E infinite history length signature will never get trained and will always just update the table
+
+SHiP Optimization
+---
+reducting per-line storage
+reducing saturating counter width
+sensitivity to cache sizes
+
+Performance versus Hardware Overhead 
+
+Related work
+---
+Mentions Sampling Dead Block Prediction (SDBP) paper and then eviscerates it
+
+SDBP is kind of signature based, but fundamentally different to SHiP bc SDBP updates predictions on last accessing signature as opposed to on the insertion signature
+
+"There are significantly fewer unique PCs in SPEC applications (10s to 100s) than in multimedia, games, and server workloads (1,000s to 10,000s)"
+
+Conclusion
+---
+
+More of same.

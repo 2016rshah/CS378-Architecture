@@ -1,0 +1,100 @@
+Paper: Perceptron Learning for Reuse Prediction by Teran, Wang, Jimenez
+
+<b>Summary:</b>
+
+Reuse prediction, i.e. determining if a cache block is likely to be accessed again before it is evicted has been well studied in preceding papers. Existing work has already considered "features" like data and instruction addresses to guide the prediction, but extracting accuracy has been problematic in the LLC. Neural nets like perceptrons can combine the existing features in a novel way to improve the accuracy of the prediction. This can lead to better coverage and fewer false positives. 
+
+A primary novelty in the paper is leveraging the perceptron training model so the weights will be stored in tables that are accessed by hashing the input features. Then the input vectors are treated as vectors of ones which will reduce the dot product to be simply a sum of the weights. This sum can be compared against a threshold to generate a positive or negative prediction. This is valuable because it addresses workloads where there are different patterns that need to be treated differently without interference between them. 
+
+A sampler will designate representatives and these representatives will be used to retrain the weights based on the outcomes of cache hits/misses. There were six features explored in this work, but the approach is general enough to support arbitrary features modulo the overhead and complexity required to track them. 
+
+<b>My thoughts/questions/extensions:</b>
+
+What about other neural nets? Prior work has used perceptrons, but never explained in paper why this was a solid choice. 
+
+Other perceptron paper had to draw a distinction about linear separability. Is there any analagous issue in reuse prediction? 
+
+Instead of falling back to LRU could you fall back to magnitude of y_out? In other words we could store the y_out value rather than the dead-prediction bit and take the lowest one rather than leaving it as binary. Probably much larger overhead, but worth evaluating if it is worth it to move away from LRU. 
+
+Handling the prefetcher by giving every prefetched block a single fake address seems naive. Perhaps a new research direction is "prefetcher-aware reuse prediction in the last level cache". 
+
+How long is the training time, realistically, for this approach? Because in the presence of a lot of features, because you don't train on every access (only ones below the threshold), and because there won't be any constructive interference, wouldn't it take forever? 
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Abstract/Intro
+---
+Reuse prediction: "whether a given block is likely to be accessed again before it is evicted"
+
+Compare against SDBP, SHiP, and LRU
+
+Existing work already considers "features" like data and instruction addresses, but extracting accuracy has been problematic in the LLC. 
+
+Perceptron learning can combine existing features in a novel way to improve accuracy
+
+Coverage Rate: block predicted not to be reused. Represents the opportunity for optimization given by the predictor
+False Positive Rate: incorrectly predicted as not reused. Represents potential cache misses caused by incorrect prediction leads to live block being replaced
+
+Choose weights. Then dot product the weights with the input vector to get some value y_out. If y_out exceeds a threshold then the prediction is true, otherwise it is false. Then retrain the weights. 
+
+Input vector, in this case, is just a vector of ones (so the dot product is just computing a sum), which works because the weights themselves are chosen by indexing based on the features into hash tables. Features are address of memory instructions and bits from the block address, tag, or page number.
+
+Weights probably start at some default value and then are retrained when the actual outcome of the predicted event is known. If prediction was correct and y_out is over some threshold, then the weights aren't changed because everything worked out swell. If they were wrong, then the weight is incremented/decremented based on the correlation between the input (i.e. the location of the weight in the table) and the predicted event. "Over time, the weights are proportional to the probability that the outcome of the event is true in the context of the input and the criterion for chooseing that weight".
+
+Evaluated in the context of a stream prefetcher, whereas previous work usually evaluates without a prefetcher, which is unrealistic. 
+
+Evaluation: pick some completely unrelated feature (say the timestamp, or something) and train a weight for it. That weight should go towards zero as time goes to infinity because it is the least correlated. If it was non-negative, that would imply the algorithm is learning something about how time is related to the prediction, even though they are independent. This would imply the predictor is broken. 
+
+Question: did the original paper say they were perceptrons but then get roasted in the review process and have to change it to clarify it is actually just perceptron learning? 
+
+Related work
+---
+Reuse distance prediction: more fine-grained than dead block prediction, but essentially the same thing
+Dead block prediction
+Signature based hit prediction
+Perceptrons
+
+Explanation
+---
+
+Combining features by summing weights avoids the destruc- tive interference and exponential blowup that can be caused by combining them into a single index.
+
+Primary benefit is workloads where there are different patterns that need to be treated differently without interference between them
+
+Uses a sampler to only do the training algorithm a fraction of the time
+
+Predictor is consulted on insertions AND accesses. On insertions the block is predicted bypasses the cache if it is predicted to not be reused. On accesses the block is predicted to see if it is now dead. This dead-prediction is used to drive the replacement policy
+
+What does the replacement policy do when there is no blocks predicted to be dead? Possible: we could store the y_out value and take the lowest one rather than leaving it as binary. But to save space it probably just does LRU or something
+
+Training: bit confused by which direction represents predicting reused and predicting not reused, so hard to follow this section
+
+Falls back to LRU
+
+Prefetchers sometimes try to bring a block into memory preemptively. The predictor is used on these, but they don't have a genuine instruction address associated with them because the prefetchers don't give that information. So instead, they have used a single fake address to associate all the prefetches with. Does this lead to interference? Is this an alright assumption or is further research required on what feature to associate with the prefetches? 
+
+
+Methodology/Results
+---
+
+Avoiding overfitting
+
+Unfair to compare against approaches that weren't built for prefetching
+
+Six features tracked
+
+Not all features are expected to correlate with every block
+
+How long is the training time, realistically, for this approach? Because in the presence of a lot of features, and because you don't train on every access (only ones below the threshold), and a lack of constructive interference, wouldn't it take forever? 
+
+
+Conclusion
+---
+"The conclusion goes here", was this paper even refereed??
+
+"The complexity of pereptron-based reuse prediction is no worse than that of branch predictors that have been iplemented in real processors", sounds fake, but okay
+
+Only explores address of previous memory instructions, and various shifts of the currently accessed block (leaves other features to future work)
+
+
