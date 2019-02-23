@@ -7,11 +7,9 @@ using namespace std;
 
 // the trace file of cache accesses
 ifstream trace_file;
-vector<uint64_t> trace; 
+vector<uint64_t> trace_array; 
 int trace_index;
 
-uint64_t address;
-    trace_file >> address;
 
 /* returns the trace name, with .txt appended */
 char *get_trace_name() {
@@ -42,11 +40,12 @@ void CACHE::llc_initialize_replacement()
     // put your own initialization code here
 
     // use trace_file to create an array, initialize an index counter into the array which represents where we are in the program
+    
     trace_index = 0; 
     while(trace_file.good()) {
         uint64_t address;
         trace_file >> address;
-        trace.push_back(address);
+        trace_array.push_back(address);
         trace_index++;
     }
 }
@@ -69,13 +68,13 @@ uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, c
     // for loop through the possible victims and for loop forward in the trace array to find the max value you have to increment before you find the same thing. Return that. 
     int max_interval = 0;
     int max_interval_way = 0;
-    for(int current_way = 0; i < LLC_WAY; current_way++) {
+    for(int current_way = 0; current_way < LLC_WAY; current_way++) {
         int current_interval = 0;
         uint64_t target_addr = current_set[current_way].address; // block address
-        uint64_t curr_addr = trace[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
+        uint64_t curr_addr = trace_array[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
         while(target_addr != curr_addr) {
             current_interval++;
-            curr_addr = trace[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
+            curr_addr = trace_array[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
         }
         if(current_interval > max_interval) {
             max_interval = current_interval;
