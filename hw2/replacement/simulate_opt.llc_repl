@@ -9,7 +9,7 @@ using namespace std;
 ifstream trace_file;
 vector<uint64_t> trace_array; 
 int trace_index;
-
+uint64_t trace_size;
 
 /* returns the trace name, with .txt appended */
 char *get_trace_name() {
@@ -41,13 +41,16 @@ void CACHE::llc_initialize_replacement()
 
     // use trace_file to create an array, initialize an index counter into the array which represents where we are in the program
     
+    // cout << "Reading trace file into array" << endl;
     trace_index = 0; 
     while(trace_file.good()) {
         uint64_t address;
         trace_file >> address;
         trace_array.push_back(address);
-        trace_index++;
+        // trace_index++;
     }
+    cout << "read this many lines from trace file: " << trace_array.size() << endl;
+    trace_size = trace_array.size();
 }
 
 /* find a cache block to evict
@@ -64,23 +67,25 @@ uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, c
     }
 
     // your eviction policy goes here
-
     // for loop through the possible victims and for loop forward in the trace array to find the max value you have to increment before you find the same thing. Return that. 
     int max_interval = 0;
     int max_interval_way = 0;
     for(int current_way = 0; current_way < LLC_WAY; current_way++) {
-        int current_interval = 0;
-        uint64_t target_addr = current_set[current_way].address; // block address
-        uint64_t curr_addr = trace_array[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
-        while(target_addr != curr_addr) {
-            current_interval++;
-            curr_addr = trace_array[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
-        }
-        if(current_interval > max_interval) {
-            max_interval = current_interval;
-            max_interval_way = current_way;
-        }
+      int current_interval = 1;
+      uint64_t target_addr = current_set[current_way].address; // block address
+      uint64_t curr_addr = trace_array[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
+      
+      // curr_addr is broken for some reason
+      while(target_addr != curr_addr && (current_interval + trace_index) < trace_size) {
+	current_interval++;
+	curr_addr = trace_array[trace_index + current_interval] >> LOG2_BLOCK_SIZE;
+      }
+      if(current_interval > max_interval) {
+	max_interval = current_interval;
+	max_interval_way = current_way;
+      }
     }
+    // cout << "Predicting: " << max_interval_way << endl;
     return max_interval_way;
 }
 
@@ -95,7 +100,7 @@ void CACHE::llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t wa
     // your code goes here
 
     // increment the index counter because we have incremented one value from where we are in the trace file
-    trace_index++; // will writebacks be recorded in the trace? if so I'll need to ignore the warning and increment the value above that other line of code
+    trace_index++; // is everything that calls update_replacement state also included in the trace file? 
 }
 
 /* called at the end of the simulation */
@@ -103,7 +108,5 @@ void CACHE::llc_replacement_final_stats()
 {
     // close the trace file
     trace_file.close();
-
     // your code goes here
-
 }
