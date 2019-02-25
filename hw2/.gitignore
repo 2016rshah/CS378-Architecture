@@ -6,3 +6,4 @@ scripts
 *.txt
 prefetcher/l2c_prefetcher.cc
 replacement/llc_replacement.cc
+output/

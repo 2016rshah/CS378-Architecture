@@ -1,0 +1,54 @@
+#include "cache.h"
+#include "ooo_cpu.h"
+#include <fstream>
+#include <unordered_map>
+
+using namespace std;
+
+
+// vector<uint64_t> trace_array; 
+int robin;
+
+/* initialize cache replacement state */
+void CACHE::llc_initialize_replacement()
+{
+    // put your own initialization code here
+    robin = 0;
+}
+
+/* find a cache block to evict
+ * return value should be 0 ~ 15 (corresponds to # of ways in cache) 
+ * current_set: an array of BLOCK, of size 16 */
+uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t pc, uint64_t full_addr, uint32_t type)
+{
+    /* don't modify this code or put anything above it;
+     * if there's an invalid block, we don't need to evict any valid ones */
+    for (int way = 0; way < LLC_WAY; way++) {
+        if (current_set[way].valid == false) {
+            return way;
+        }
+    }
+
+    // your eviction policy goes here
+    robin = (robin + 1) % LLC_WAY;
+    // cout << "Predicting: " << robin << endl;
+    return robin;
+}
+
+/* called on every cache hit and cache fill */
+void CACHE::llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t pc, uint64_t victim_addr, uint32_t type, uint8_t hit, uint64_t latency, uint64_t effective_latency)
+{
+    /* don't modify this code or put anythin above it;
+     * OPT doesn't care about writebacks */
+    if (type == WRITEBACK)
+        return;
+
+    // your code goes here
+
+}
+
+/* called at the end of the simulation */
+void CACHE::llc_replacement_final_stats()
+{
+  // your code goes here
+}
