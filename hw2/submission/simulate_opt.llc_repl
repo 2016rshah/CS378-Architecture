@@ -1,0 +1,104 @@
+#include "cache.h"
+#include "ooo_cpu.h"
+#include <fstream>
+#include <unordered_map>
+
+using namespace std;
+
+// the trace file of cache accesses
+ifstream trace_file;
+map<uint64_t, queue<uint64_t>> trace_structure; 
+
+/* returns the trace name, with .txt appended */
+char *get_trace_name() {
+    int i;
+    int len = strlen(ooo_cpu[0].trace_string);
+    for (i = len-1; i >= 0 && ooo_cpu[0].trace_string[i] != '/'; i--) ;
+    char *result = new char[len-i-6];
+    memcpy(result, &(ooo_cpu[0].trace_string[i+1]), len-i-10);
+    strcpy(result+len-i-10, ".txt");
+    return result;
+}
+
+/* initialize cache replacement state */
+void CACHE::llc_initialize_replacement()
+{
+    cout << "initializing OPT simulator ..." << endl;
+
+    /* open the cache reference trace file */
+    char *trace = get_trace_name();
+    const char *base = "/u/matthewp/traces/";
+    char *filename = new char[strlen(base)+strlen(trace)+1];
+    strcpy(filename, base);
+    strcpy(&(filename[strlen(base)]), trace);
+    delete trace;
+    cout << "reading cache references from: " << filename << endl;
+    trace_file = ifstream(filename);
+
+    // put your own initialization code here
+
+    uint64_t trace_index = 0; 
+    while(trace_file.good()) {
+        uint64_t full_address;
+        trace_file >> full_address;
+	uint64_t block_address = full_address >> LOG2_BLOCK_SIZE;
+	trace_structure[block_address].push(trace_index);
+        trace_index++;
+    }
+    cout << "read this many lines from trace file: " << trace_index << endl;
+}
+
+/* find a cache block to evict
+ * return value should be 0 ~ 15 (corresponds to # of ways in cache) 
+ * current_set: an array of BLOCK, of size 16 */
+uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t pc, uint64_t full_addr, uint32_t type)
+{
+    /* don't modify this code or put anything above it;
+     * if there's an invalid block, we don't need to evict any valid ones */
+    for (int way = 0; way < LLC_WAY; way++) {
+        if (current_set[way].valid == false) {
+            return way;
+        }
+    }
+
+    // your eviction policy goes here
+    uint64_t max_interval = 0;
+    uint64_t max_interval_way = 0;
+    for(int current_way = 0; current_way < LLC_WAY; current_way++) {
+	if(trace_structure[current_set[current_way].address].empty()) { // infinite rereference interval
+	    return current_way; // might as well early exit
+	}
+	else if(trace_structure[current_set[current_way].address].front() > max_interval) {
+	    max_interval = trace_structure[current_set[current_way].address].front();
+	    max_interval_way = current_way;
+	}
+    }
+    // cout << "Predicting: " << max_interval_way << endl;
+    return max_interval_way;
+}
+
+/* called on every cache hit and cache fill */
+void CACHE::llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t pc, uint64_t victim_addr, uint32_t type, uint8_t hit, uint64_t latency, uint64_t effective_latency)
+{
+    /* don't modify this code or put anythin above it;
+     * OPT doesn't care about writebacks */
+    if (type == WRITEBACK)
+        return;
+
+    // your code goes here
+
+    // increment the index counter because we have incremented one value from where we are in the trace file
+    uint64_t block_addr = full_addr >> LOG2_BLOCK_SIZE;
+    if(!trace_structure[block_addr].empty()) {
+	trace_structure[block_addr].pop();
+    }
+    // trace_index++; // is everything that calls update_replacement state also included in the trace file? 
+}
+
+/* called at the end of the simulation */
+void CACHE::llc_replacement_final_stats()
+{
+    // close the trace file
+    trace_file.close();
+    // your code goes here
+}
