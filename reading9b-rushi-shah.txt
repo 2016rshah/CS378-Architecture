@@ -1,0 +1,73 @@
+Paper: Practical Off-chip Meta-data for Temporal Memory Streaming by Wenisch, Ferdman, Ailamaki, Falsafi, and Moshovos
+
+<b>Summary:</b>
+
+Most commercial workloads require prefetching that can't be satisfied with typical spatial or stride based prefetchers. Instead, the pointer-chasing access patterns require temporal prefetching. To implement temporal prefetching, more meta data is required than the amount that can be stored on the chip itself (in the cache or hardware, etc.). Instead, some of the meta data needs to be stored off chip. Off chip storage presents three main problems, and this paper presents solutions to make this storage practical. Namely, these issues are 
+(1) lookup latency for off chip meta data is very high (solution is a hash based lookup implemented on chip)
+(2) meta data queries and updates can put pressure on the bandwidth of the memory system (solution is a probablistic approach that only makes a probable subset of the updates)
+(3) a single lookup for a single prefetch can be expensive (solution is to instead organize the metadata so a single lookup can lead to multiple prefetches)
+
+The approach suggested by this paper is implemented in a system called Sampled Temporal Memory Streaming (STMS).
+
+<b>My thoughts/questions/extensions:</b>
+
+The paper talks a lot about commercial workloads and how they involve a lot of pointer-chasing. But what is the alternative to commercial workloads? SPEC?
+
+It seems like a lot of the ideas here are lifted from the global history table paper. However, I felt that paper was kind of incremental (only suggesting a way to split up the table into two). Similarly, I feel like this paper is kind of incremental (they even mention that "In this study, our goal is not to improve the prediction accuracy of the state-of-the-art address-correlating prefetchers. Instead, we seek to identify and solve the key implementation barriers that make these prefetchers unattractive for practical deployment.") So because both papers were slightly incremental, they almost could have been combined into one paper. 
+
+The sampling is a funny idea to me. They are basically like "oh it would be too expensive to do all the updates, let's just, like, not do some of them". Empirically it works, but maybe it is worth investigating which updates can truly be ignored. Or approximating a batching of the updates on chip so one update off-chip is issued every five updates on-chip, for example. 
+
+Amortized lookups: don't totally understand this one. It says something about how we want to amortize our off-chip lookups over many successful prefetches. Does that just mean they want a lot of data in each lookup? How is that related to the number of successful prefetches?
+
+Off chip prefetchers seem pretty radical (hardware optimizations to hide memory latecy that depend on exploiting the same memory it is trying to optimize). I wonder how standard this approach became after this paper demonstrated that it could be practical? 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Intro
+===
+
+Most commercial workloads require prefetching that can't be satisfied with typical spatial or stride based prefetchers. Instead, the pointer-chasing access patterns require temporal prefetching. To implement temporal prefetching, more meta data is required than the amount that can be stored on the chip itself (in the cache or hardware, etc.). Instead, some of the meta data needs to be stored off chip. Off chip storage presents three main problems, and this paper presents solutions to make this storage practical. Namely, these issues are 
+(1) lookup latency for off chip meta data is very high (solution is a hash based lookup implemented on chip)
+(2) meta data queries and updates can put pressure on the bandwidth of the memory system (solution is a probablistic approach that only makes a probable subset of the updates)
+(3) a single lookup for a single prefetch can be expensive (solution is to instead organize the metadata so a single lookup can lead to multiple prefetches)
+
+2
+===
+
+Temporal prefetching is learning when an address is accessed shortly after another address, which can capture the relationship found pointer-chasing programs. 
+
+Mentions Markov chain prefetchers, then mentions the Global History Bufer paper. 
+
+"In this study, our goal is not to improve the prediction accuracy of the state-of-the-art address-correlating prefetchers. Instead, we seek to identify and solve the key implementation barriers that make these prefetchers unattractive for practical deployment." I don't really understand why they are currently impractical? Especially because in the related work they say that there aren't significant overheads for the global history buffer idea. 
+
+3
+===
+Here are the major challenges for implementing a address-correlating prefetcher. Usually, they could be implemented on chip, but the size of the meta data is proportional to the size of the working set. So eventually, they need to move off chip. Here are the problems with off-chip metadata:
+
+- high lookup latency: solve this by following arbitrarily long streams to prefetch things that will fall outside the lookup latency. 
+
+- memory bandwidth requirements: off chip correlation tables are super bad because they need to fill up the bandwidth with not only lookups, but also updates
+
+4
+===
+STMS Design
+
+Problems
+---
+Minimizing lookup latency: "effective streaming for commercial workloads requires minimal lookup latency to ensure timely prefetch"
+
+Bandwidth-efficient index table updates: the naive approach to off chip meta data storage will triple the memory bandwidth consumption. But we can do it more efficiently, hopefully.
+
+Amortized lookups: don't totally understand this one. Something about how we want to amortize our off-chip lookups over many successful prefetches. Does that just mean they want a lot of data in each lookup? How is that related to the number of successful prefetches. 
+
+Solutions
+---
+Hash table design to get a low-latency index table lookup and high storage density without requiring synchronization across cores
+
+Bandwidth-efficient probablistic index update: only do some of the updates to reduce the number of updates you have to do, lol. 
+
+Variable Length Streams via split tables. 
+
+5
+===
+On chip, STMS requires a prefetch buffer and address queue collocated with each core to track pending prefetch addresses and buffer prefetched data. 

@@ -1,0 +1,51 @@
+Paper: Access Map Pattern Matching Prefetch: Optimization Friendly Method by Ishii, Inaba, and Hiraki
+
+<b>Summary:</b>
+
+<i>Key insight: current approaches for prefetching depend on (a) data addresses, (b) memory access orderings, and (c) instruction addresses. But (b) and (c) are often scrambled by optimizations in the compiler, etc. So instead, we can leverage coarse-grained ordering info like (d) recent-zone-access frequency. This leads to an optimization-aware prefetcher.</i>
+
+The primary microarchitectural optimizations (out of order execution, and relaxed consistency models) scrambles memory access orderings. Similarly, compiler optimizations like loop unrolling duplicate memory access instructions like load and store. But current prefetchers rely on memory access orderings and memory access instructions. So the approach suggested in this paper "does not suffer because of optimizations since it uses neither memory access ordering nor instruction addresses."
+
+"The AMPM prefetch method involves the following steps (1) detecting hot zones, (2) storing the 2-bit states for all cache lines in the memory access pattern map of these hot zones, (3) listing prefetch candidates by pattern matching of the memory access pattern map, and (4) selecting prefetch requests from among these candidates and issuing the requests to the main memory."
+
+<b>My thoughts/questions/extensions:</b>
+
+The evaluation section was weak. The paper just referred to a figure to display the results without providing sufficient interpretation or insight.
+
+Didn't entirely understand the hardware design section, so can't provide constructive feedback on that section. 
+
+"The AMPM prefetch method involves the following steps (1) detecting hot zones, (2) storing the 2-bit states for all cache lines in the memory access pattern map of these hot zones, (3) listing prefetch candidates by pattern matching of the memory access pattern map, and (4) selecting prefetch requests from among these candidates and issuing the requests to the main memory." From what I understand, the notion of the hot zone is the fundamental contribution. Aren't steps 2-4 just applying existing techniques to the hot zones that are identified? 
+
+I am skeptical about the hot zones the paper suggests. I think there are a lot of unaddressed concerns in the identification of hot zones that the paper should have covered in more detail, mainly about how they are constructed and to what extent they are an over-approximation of the actual hot zones of the program. For example, consider if you split all of your memory into 25% evenly spaced chunks, and you access the memory between 20% and 30% heavily. Then you will be splitting up the real hot zone (20-30%) across two of the over-approximated hot zones (the 0-25% chunk and the 25-50% chunk). 
+
+I think the main contribution of this paper is identifying an issue with existing prefetchers (they aren't optimization-aware). I can't say if their solution to the issue is sufficient, but I think it hints at an interesting research direction: how does progress in the state-of-the-art in one domain (microarchitectural or compiler optimizations) interact with progress in another (memory prefetching). I think research at intersections like this is rare but valuable. 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Current approaches for prefetching depend on (a) data addresses, (b) memory access orderings, and (c) instruction addresses. But (b) and (c) are often scrambled by optimizations in the compiler, etc. So instead, we can leverage coarse-grained ordering info like (d) recent-zone-access frequency. This leads to an optimization-aware prefetcher.  
+
+1 Intro
+---
+Microarchitecture optimizations: out-of-order execution, speculative execution, and relaxed consistency of microarchitecture (paper doesn't really talk about how speculative execution can influence prefetching)
+
+Compiler optimization: loop unrolling
+
+Memory access orderings are often scrambled by out-of-order execution with relaxed memory consistency. 
+Memory access instructions such as load or store are duplicated by loop unrolling
+
+AMPM prefetch method involves (1) detecting hot zones, (2) storing the 2-bit states for all cache lines in the memory access pattern map of these hot zones, (3) listing prefetch candidates by pattern matching of the memory access pattern map, and (4) selecting prefetch requests from among these cnadidates and issuing the requests to main memory.
+
+"In section2, we [...]" with no space between section and 2. Was this paper even refereed?  
+
+2
+---
+AMPM divides memory into fixed sized areas. How are these areas delineated? If just an even splitting then couldn't you divide a hot zone between two slices? 
+
+Only prefetch the hot zones. Isn't that just selecting a slice of the entire main memory that has the highest density of accessed memory and putting that whole slice of memory into the cache? And the size of the slice is static, from what I understand, so if one cache line in that whole slice is getting hit repeatedly you're going to pull in so much overhead and pollute the cache so much. 
+
+Somehow stride detection is used to generate the prefetch candidates, but I don't really understand how that relates to the hot zones? In case of a tie between two candidates, prefer spatial locality.
+
+What is a conflict miss? 
+
+
+

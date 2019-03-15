@@ -1,0 +1,39 @@
+Paper: Insertion and Promotion for Tree-Based PseudoLRU Last-Level Caches by Jimenez
+
+<b>Summary:</b>
+
+<i>Key insight: this paper goes beyond human intuition and lets the machine take over the design of cache management.<i>
+
+PseudoLRU is an inexpensive cache replacement policy commonly used in highly associative caches. It can be generalized with an "insertion/promotion vector" (IPV) that defines how lines are inserted and promoted, rather than the naive insertion/promotion policy enforced by PsuedoLRU. "The vectors can be viewed as a highly compressed representation of clusters of program behaviors leading to good replacement decisions."
+
+They use off-line genetic algorithms to explore the vast search space of possible IPVs. After constructing promising IPVs, they use set-duelling to dynamically select the best IPV for the workload. 
+
+The results show that despite the lower overhead of this approach, it has comparable performance with state-of-the-art techniques like DDRIP. 
+
+<b>My thoughts/questions/extensions:</b>
+
+The insertion/promotion policy of PsuedoLRU doesn't seem like my first thought of tuning parameter to train with genetic algorithms, so further research should explore other options. The notion of "highly compressed representation of clusters of program behaviors" seems promising as well, what other clusters can we compress (i.e branch history, training threshold, distant re-reference interval, etc.)?
+
+This paper is very novel, but it is a bit heavy-handed with the justification of novelty. Maybe the community demands that. 
+
+Engineers are focused on results, scientists are focused on intuition. I agree with the idea of letting the computer automate tasks, but I still think it is worth investigating the intuition behind the successful empirical results. 
+
+Jimenez has kind of an elementary writing style. His papers seem to go on oddly specific tangents that are aimed at what I imagine is one piece of feedback he received, rather than cogently flowing from beginning to end. But his ideas are pretty good, and he consistently does remarkably novel research. 
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Generalize LRU and PsuedoLRU to explore inserting at positions other than MRU and promoting differently than just the aging when used. Instead of reasoning about which of the configurations to use, they use random search over the distribution of possibilities with genetic algorithms to explore the space. 
+
+Notion generalized into "insertion/promotion vector, or IPV". 
+
+"for this work we will suspend our intuition in favor of that of the machine."
+
+Genetic Insertion and Promotion for PseudoLRU Replacement: we evolve several IPVs off-line and dynamically select between them at run- time using set-dueling.
+
+Just seems like set-dueling for adapting insertion and promotion policy, but okay.
+
+The vectors can be viewed as a highly compressed representation of clusters of program behaviors leading to good replacement decisions, and as such their detailed analysis is beyond the scope of this paper.
+
+We believe that going beyond human intuition and letting the machine take over the de- sign of cache management and perhaps other areas has great potential to improve processor design.
+

@@ -1,0 +1,23 @@
+Paper: Maximizing Cache Performance Under Uncertainty by Beckmann and Sanchez
+
+<b>Summary:</b>
+
+Key insight: there are TWO factors that should guide replacement decisions. Namely, the time until rereference and the probability that the line will hit. Any policy that only addresses one is inadequate, and the two values can be reconciled into one value (the "EVA") that policies should evaluate.
+
+"EVA is essentially a cost-benefit analysis about whether a candidate’s odds of hitting are worth the cache space it will consume."
+
+EVA = expected_hits - (cach_hit_rate / cache_size) * expected_time
+
+"To summarize, we select a victim by comparing each candidate’s EVA and evict the candidate with the lowest EVA. Our implementation does not compute EVA during replacement. Instead, it infrequently ranks ages by computing their EVA."
+
+<b>My thoughts/questions/extensions:</b>
+
+I like the idea of formalizing the metric upon which replacement policies are based. I agree with the indictment of the field as being too heuristic-based and not formal enough with their intuition. I think this paper represents a fundamental step in the direction towards formalizing and institutionalizing scientific knowledge. 
+
+I think it would be worth trying to reconcile previously successful approaches with this EVA formalism. Placing those policies within the framework of EVA would perhaps provide more intuition on them and future work. 
+
+I did not entirely understand the probability portions of the paper. I also did not understand how they were able to identify the expected hits of a line and the expected time of a line. 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Everything is just a bunch of pioneering heuristics and we're sick and tired of it. We're gonna teach you guys some math, and then use that math to wipe the floor with your dumb policies. Suck on my economic-value-added DICK 💦

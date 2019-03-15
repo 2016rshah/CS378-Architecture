@@ -1,0 +1,83 @@
+Paper: Sandbox Prefetching: Safe Run-Time Evaluation of Aggressive Prefetchers by Pugsley, Chishti, Wilkerson, Chuang, Scott, Jaleel, Lu, Chow, and Balasubramonian
+
+<b>Summary:</b>
+
+<i>Key insight: by aggressively using the most bandwidth and bus transactions, this prefetcher is able to obtain the highest prefetch coverage.</i>
+
+Sandbox Prefetching is basically set duelling for cache prefetching. They implement multiple different candidate prefetch patterns (based on multiple possible offsets in a potential stream). They store the address of the cache lines they requested into a bloom filter rather than polluting the real cache and wasting memory bandwidth. They track the simulated accuracy of the proposed candidate in the sandbox by storing the address of all cache lines that would have been prefetched and use that to update an accuracy score. Then, after an implementation passes a threshold of simulated prefetch hits (past a threshold accuracy score), it is globally activated. The magnitude of the accuracy score determines how many prefetches will be issued by that policy. Empirically, this approach is more effective and simpler than the existing state-of-the-art (feedback directed prefetching and address map patter matching).
+
+Two broad categories of hardware prefetchers: conservative, confirmation-based prefetchers (such as a stream prefetcher), and aggressive, immediate prefetchers (such as a next-line prefetcher). By storing the history of accessed addresses in the bloom filter, the two techniques can be merged by this paper: after a stride length is evaluated in the sandbox, it can be activated as an immediate prefetcher that doesn't wait for further confirmation.
+
+The implementation was evaluated against feeback directed prefetching (FDP) which is basically just an improved version of a traditional stream prefetcher and against Address Map Pattern Matching (AMPM) which is a super complex but super effective prefetcher. It was more effective than FDP and at least if not more effective than AMPM while requiring less complexity. 
+
+<b>My thoughts/questions/extensions:</b>
+
+As usual, there are no new ideas in computer architecture research. This paper was very reminiscient for me as the idea of set duelling. 
+
+What about sandboxing other policies that aren't just stride predictors? Are there alternative policies that could be plugged in instead? 
+
+I'm a little bit confused about how the possible candidates are cycled through the sandbox. At first I thought it was a static approach that just put each candidate in the sandbox and calculated an accuracy score once and stuck to the policy for the rest of the program. Then the paper said they are "evaluated in a round-robin fashion", which makes me think they are constantly cycled through the sandbox as the program runs. Either case begs followup questions about how it will interact with programs that operate in distinct phases that exhibit differing behaviors. If it is the static approach, then clearly phases of the program will lead to issues when the policies are only evaluated once. If it is the dynamic approach then how does the periodicity of the round-robin approach compare to the expected length of a phase? If two or three phases pass before a policy is evaluated again then they will be missed. If a policy is evaluated two or three times all within the same phase of the program maybe it's not really a problem because the wasted work is negligible? 
+
+"Candidate prefetchers are not 'confirmed' in the context of a single access stream, as in a stream prefetcher, but rather in the context of all memory access patterns present in the currently executing program". In the context of a multithreaded program this might lead to one program dominating the prefetched cache, which will find a globally optimal solution, but might be locally unfair to certain threads. Same problem as we've seen before when allocating hardware resources "fairly" to different threads. 
+
+The paper discusses the use of a bloom filter, but that doesn't seem like a really fundamental contribution. It just seems like a design decision they used to make their approach feasible.  
+
+"it might not be surprising that the prefetcher that aggressively uses the most bandwidth and bus transactions also has the highest prefetch coverage, but it is important to note that FDP and AMPM could have used more bandwidth, but their prefetching mechanisms did not identify sufficient opportunities to issue additional useful prefetches, while SBP did." The question is that is SBP able to scale _down_ to the same amount of bandwidth? What does performance look like when it does? 
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+1 Intro
+===
+
+Sandbox Prefetching is basically set duelling for cache prefetching. Implement multiple different candidate prefetch patterns, then store the address of the cache lines they requested into a bloom filter rather than polluting the real cache and wasting memory bandwidth. Then, after an implementation passes a threshold of simulated prefetch hits, it is globally activated. Empirically, this is more effective and simpler than the existing state-of-the-art (feedback directed prefetching and address map patter matching).
+
+2 Background 
+===
+
+Two broad categories of hardware prefetchers: conservative, confirmation-based prefetchers (such as a stream prefetcher), and aggressive, immediate prefetchers (such as a next-line prefetcher).
+
+Stream prefetchers: try to identify spatial locality by confirming that a stream exists. When address A is referenced, wait around for address A+1 to be referenced, then A+2, and only after confirming this "stream" is A+3, etc. prefetched. The warmup time per stream seems like a very serious drawback according to the paper. 
+
+Immediate prefetchers: immediate prefetchers, like the next-line prefetcher, immediately prefetch A+1 whenever A is seen. Kind of like confirmation based prefetcher with confirmation of only length 1. Also doesn't generalize into a stream, so it can only prefetch one thing at a time (namely A+1). 
+
+3 Related Work
+===
+Evaluated against feeback directed prefetching (FDP) which is basically just an improved version of a traditional stream prefetcher and against Address Map Pattern Matching (AMPM) which is a super complex but super effective prefetcher.
+
+4 Sandbox Prefetching
+===
+"Candidates are evaluated by simulating their prefetch action and measuring the simulated effect."
+
+Accuracy score per candidate implementation, which is incremented on every successful prefetch. 
+
+"Candidate prefetchers are not 'confirmed' in the context of a single access stream, as in a stream prefetcher, but rather in the context of all memory access patterns present in the currently executing program" -> in the context of a multithreaded program this might lead to one program dominating the prefetched cache, which will find a globally optimal solution, but might be locally unfair to certain threads. Same problem as we've seen before. 
+
+"Each candidate is evaluated for a fixed number of L2 accesses, and then the contents of the sandbox are reset, and the next candidate is evaluated." -> so this seems like a static approach that is tested at the beginning of the program? What if the initial phase of the program is not indicative of other phases? Could we do this as a dynamic approach in like a set duelling approach that dynamically turns on and turns off implementations? That way the accuracy score would be a saturating counter rather than just an incrementing score. 
+
+Bloom filter, but that doesn't seem like a really fundamental contribution? 
+
+"prefetchers are evaluated [...] in a time multi-plexed fashion"
+
+"evaluated in a round-robin fashion", so the periodicity is the evaluation time * number of candidates? How does that compare to the expected length of a "phase" of the program?
+
+The only candidates are offsets for the offset prefetching
+
+4.5 Detecting Streams
+---
+"now that we can accurately detect strided streams in the access pattern, it makes sense that each candidate prefetcher be allowed to prefetch more than a single line" so we are extending the aggressive immediate prefetcher into a stream prefetcher. That is a pretty neat blend of the two types of prefetchers. The magnitude of the accuracy score determines how many elements of the stream will be prefetched. 
+
+
+
+6 Evaluation
+===
+"with lower storage and logic requirements, SBP is able to nearly meet or beat AMPM, and is strictly better than FDP."
+
+"SBP" usually uses the most bandwidth of any tested prefetch technique. Therefore it might not be amenable to a hybrid solution.
+
+"SBP sees more late prefetches [...] even if we were to consider a late prefetcha s no better than an outright cache miss, then SBP would still have fewer cache misses than either FDP or AMPM"
+
+"it might not be surprising that the prefetcher that aggressively uses the most bandwidth and bus transactions also has the highest prefetch coverage, but it is important to note that FDP and AMPM could have used more bandwidth, but their prefetching mechanisms did not identify sufficient opportu- nities to issue additional useful prefetches, while SBP did." -> question is that is SBP able to scale down to the same amount of bandwidth? What does performance look like when it does? 
+
+
+

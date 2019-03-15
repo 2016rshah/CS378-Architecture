@@ -1,0 +1,69 @@
+Overview
+--------
+You will be writing a Python program to train and test a machine learrning model
+using a trace file of branch history. The trace filename will be passed to your
+program as an argument, which you can access with the following two lines:
+
+    import sys
+    filename = sys.argv[1]
+
+Then, you will need to create labeled examples using arrays by reading through
+the trace file. You can open and read from files like so:
+
+    trace_file = open(filename, 'r')
+    for line in trace_file:
+        # line is of the form "<PC> <branch outcome>"
+        ...
+
+The rest is left for you to figure out; using the links in the assignment document
+and googling around will help you decide how to evaluate your machine learning model.
+
+The scripts to run your program now take your program as an argument:
+
+    ./run_cluster.sh my_program.py
+    ./run_debug.sh my_program.py
+
+If you want to install scikit-learn:
+
+    ./install_libraries.sh
+
+General Tips
+------------
+You can debug your program by running it on lab machines (not streetpizza) with
+run_debug.sh, although it may take a while to finish.
+
+Running things on the cluster should be much faster than the last assignment, unless
+you are doing fancy stuff like neural networks.
+
+You can find the output of your cluster runs in output/name_of_program/*.txt
+If these files are empty, either your jobs are still running, or there was an error
+in your program. You can check which jobs are still running with the command:
+    
+    /lusr/opt/condor/bin/condor_q
+
+You can check for errors by looking at in output/name_of_program/CONDOR.*.ERR and CONDOR.*.OUT
+
+Python Arrays and for Loops
+---------------------------
+If you are new to Python, you will hopefully find that arrays and for loops are
+super easy to use compared to other languages. Here are some examples of using arrays:
+
+    array = []
+    for i in range(1, 4):
+        array.append(i)
+    print(array)    # prints [1, 2, 3]
+
+    for x in array:
+        print(x)    # prints each value in the array
+
+    # 2-d array example
+    2d_array = []
+    for i in range(0, 5):
+        nested_array = []
+        for j in range(0, 3):
+            nested_array.append(j)
+        2d_array.append(nested_array)
+    print(2d_array)     # prints [[0, 1, 2], [0, 1, 2] ...]
+
+There are lots of online resources to help if you are stuck with anything in Python.
+
