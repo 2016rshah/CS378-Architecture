@@ -1,0 +1,13 @@
++Group="GRAD"
++Project="ARCHITECTURE"
++ProjectDescription="Micro-architectural simulation"
+universe=vanilla
+getenv=true
+Rank=Memory
+notification=Error
+output=CONDOR.perlbench_53B.OUT
+error=CONDOR.perlbench_53B.ERR
+notify_user=matthewp@cs.utexas.edu
+initialdir=/u/rshah/github/CS378-Architecture/hw3/output/my_program
+executable=/u/rshah/github/CS378-Architecture/hw3/output/my_program/perlbench_53B.sh
+queue

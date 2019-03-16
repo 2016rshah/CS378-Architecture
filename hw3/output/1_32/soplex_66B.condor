@@ -1,0 +1,13 @@
++Group="GRAD"
++Project="ARCHITECTURE"
++ProjectDescription="Micro-architectural simulation"
+universe=vanilla
+getenv=true
+Rank=Memory
+notification=Error
+output=CONDOR.soplex_66B.OUT
+error=CONDOR.soplex_66B.ERR
+notify_user=matthewp@cs.utexas.edu
+initialdir=/u/rshah/github/CS378-Architecture/hw3/output/1_32
+executable=/u/rshah/github/CS378-Architecture/hw3/output/1_32/soplex_66B.sh
+queue

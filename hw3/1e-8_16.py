@@ -4,8 +4,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
 from sklearn.model_selection import GridSearchCV
 
-HISTORY_LENGTH = 32
-C_PARAM = 1
+HISTORY_LENGTH = 16
+C_PARAM = 1e-8
 
 clf = LinearSVC(C = C_PARAM)
 filename = sys.argv[1]

@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
 from sklearn.model_selection import GridSearchCV
 
-HISTORY_LENGTH = 32
+HISTORY_LENGTH = 64
 C_PARAM = 1
 
 clf = LinearSVC(C = C_PARAM)
