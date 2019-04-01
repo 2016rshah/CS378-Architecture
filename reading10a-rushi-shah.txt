@@ -1,0 +1,56 @@
+Paper: Spatial Memory Streaming by Somogyi, Wenisch, Ailamaki, Falsafi, and Moshovos
+
+<b>Summary:</b>
+
+Spatial correlation is the idea that there is a relationship between accessed data where future accesses are just a relative offset away from the current access. Typically, spatial locality is captured because the relative offsets are brought into the cache when you access a whole cache block at a time (any relative offset within the range of the cache block will be waiting for you). So to capture more spatial correlation, it makes sense to just increase the cache block size, but that is unscalable because inefficient storage and bandwidth utilization. So we need a new approach to leveraging spatial correlation. The key insight is that these spatial access patterns can be identified by the code that is correlated with them, so you can stream predicted blocks into cache based on the code that you're reading. This approach also supports predicting previous-unvisited addresses.
+
+Split memory into spatial regions, which is a sequence of consecutive cache blocks. Over the course of a "spatial region generation", mark the cache blocks that are accessed in a bit vector. Define the generation interval to be the time that will make sure that every marked block can still fit in the cache without being evicted. Then in the future, whenever the same trigger access is hit, bring all of the marked blocks from the bit vector into the cache. The trigger is "PC+offset indexing" which is a combination of PC and spatial region offset (distance in number of cache blocks an address is from start of spatial region). 
+
+<b>My thoughts/questions/extensions:</b>
+
+Supposedly there's a big difference between scientific applications and commercial applications (servers, DSS, etc.). From what I understand, science applications store their data more densely, whereas commercial applications have sparse data. But you can't tailor your hardware design per running application. So are you just expected to buy a different computer if you want to do different tasks? 
+
+What if data structures span across multiple spatial regions? Will they just be split up into multiple generations? What is the overhead for changing from one generation to another? 
+
+How do we choose a size for the spatial region? If it is too small you will have too many generations, because you would have to switch between the two generations that are triggered to frequently. If it was too big then you would also have more generations created. Is the storage space required influenced by the size of the region? <-- this is a thought I had while I was reading the paper. I eventually got to section 4.4 where these questions were addressed. That section essentially boils down to "Choosing a spatial region size involves a tradeoff between coverage and storage requirements."
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Intro
+===
+
+Spatial correlation is the idea that there is a relationship between accessed data where future accesses are just a relative offset away from the current access. Typically, spatial locality is captured because the relative offsets are brought into the cache when you access a whole cache block at a time (any relative offset within the range of the cache block will be waiting for you). So to capture more spatial correlation, it makes sense to just increase the cache block size, but that is unscalable because inefficient storage and bandwidth utilization. So we need a new approach to leveraging spatial correlation. The key insight is that these spatial access patterns can be identified by the code that is correlated with them, so you can stream predicted blocks into cache based on the code that you're reading. This approach also supports predicting previous-unvisited addresses
+
+
+2
+===
+
+Split memory into spatial regions, which is a sequence of consecutive cache blocks. Over the course of a "spatial region generation", mark the cache blocks that are accessed in a bit vector. Define the generation interval to be the time that will make sure that every marked block can still fit in the cache without being evicted. Then in the future, whenever the same trigger access is hit, bring all of the marked blocks from the bit vector into the cache. The trigger is "PC+offset indexing" which is a combination of PC and spatial region offset (distance in number of cache blocks an address is from start of spatial region). 
+
+3: hardware design
+===
+
+Not split up, so integrated with a traditional cache hierarchy (non-standard approach, not sure why and why significant)
+
+3.1: Observing Spatial Patterns
+---
+split up tables by whether or not anything in the region is accessed again. If not it is useless to predict it, so it is filtered out by the filter table. 
+
+3.2: Predicting Spatial Patterns
+---
+
+4: results
+===
+
+Supposedly a big difference between scientific applications and commercial applications (servers, DSS, etc.). Can't tailor hardware per running application, so do you just buy a different computer if you want to do different tasks? 
+
+This has a bunch of subsections that look useful for analysis. 
+
+
+Unrelated thought: 50% is such an arbitrary threshold for anything. 
+
+Science applications have dense data, commercial applications have sparse data. 
+
+What if data structures span across multiple spatial regions? Will they just be split up into multiple generations? What is the overhead for changing from one generation to another? 
+
+How do we choose a size for the spatial region? If it is too small you will have too many generations, because you would have to switch between the two generations that are triggered to frequently. If it was too big then you would also have more generations created. Is the storage space required influenced by the size of the region? <-- this is a thought I had while I was reading the paper. I eventually got to section 4.4 where these questions were addressed. That section essentially boils down to "Choosing a spatial region size involves a tradeoff between coverage and storage requirements."

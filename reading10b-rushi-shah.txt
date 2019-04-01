@@ -1,0 +1,43 @@
+Paper: Linearizing Irregular Memory Accesses for Improved Correlated Prefetching by Jain and Lin
+
+<b>Summary:</b>
+
+Irregular Stream Buffer (ISB) is a prefetcher for irregular sequences of temporally correlated memory references. Key idea introduces a "structural address space" to reorder arbitrary physical addresses into consecutive addresses in the new structure. This restructuring lets us augment temporal locality with spatial locality. Long latency TLB misses allow us to hide the overhead of maintining and synchronizing the meta data needed in this approach. 
+
+This approach can be compared primarily to the Global History Buffer, which will maintain its meta data in a circular linked list. The ISB is preferable because it simplifies the pointer chasing involved with traversing the linked list when trying to PC localize. 
+
+<b>My thoughts/questions/extensions:</b>
+
+"Looking to the future, we plan to evaluate the ISB on commercial workloads. We expect that the ISB will perform well on these workloads" -> this seems lazy to not have included that in the evaluation of this paper. There is no further research concepts that need to be explored, it is simply a matter of evaluating existing research results so it should have been included in the original paper. 
+
+"The mapping from the physical address space to the structural address space is cached on- chip only for pages that are resident in the TLB, and the prefetcher updates these caches during long latency TLB misses to effectively hide the latency of accessing off-chip meta-data." is there any case where a long latency TLB miss doesn't occur frequently enough for the updates?
+
+One of the primary benefits of the GHB was that it could be used to implement multiple strategies. This paper is saying that although, theoretically, the GHB can be used to localize based on the PC, it would be infeasible to do in practice because the pointer chasing you would have to implement for the linked lists. It suggests instead reordering the linked lists to become arrays in the ISB, so you can PC localize more efficiently. But wouldn't this destroy the benefit of only storing one structure for multiple uses? Is the structural address space suitably useful for applications other than the ISB itself? 
+
+The paper explores power usage and comes to the conclusion that this approach needs minimal power overhead because it is using more memory bandwidth, but also completing the tasks faster (faster execution time). In general, I think it is worth looking into how much each operation gets you closer to your end goal (useless operations waste power). Categorizing the operations on a spectrum from critical operation to peripheral operation would be interesting in the direction of power usage analysis and evaluation in general. This metric could be applied more broadly to other papers and implementations. For example, a neural net that has four features, but weights the fourth feature as zero and pretty much ignores it would count the calculations done for the fourth feature as peripheral. So changing the neural net to only calculate things for the first three features would be preferred in this metric because the first three operations are more critical for the neural net operation.  
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+ 
+Irregular Stream Buffer (ISB) is a prefetcher for irregular sequences of temporally correlated memory references. Key idea introduces a "structural address space" to reorder arbitrary physical addresses into consecutive addresses in the new structure. This restructuring lets us augment temporal locality with spatial locality. 
+
+This approach can be compared primarily to the Global History Buffer, which will maintain its meta data in a circular linked list. The ISB is preferable because it simplifies the pointer chasing involved with traversing the linked list when trying to PC localize. 
+
+Is the primary benefit that the prefetcher can leverage temporal locality when making predictions more conveniently? Was this convenience needed? Or is the primary benefit that you've somehow introduced spatial locality to augment the temporal locality? But if so then how does this newfound spatial locality matter when it is only visible to the ISB, not the cache or anything else itself? 
+
+The key benefit, from what I understand, is that the spatial
+
+"Looking to the future, we plan to evaluate the ISB on commercial workloads. We expect that the ISB will perform well on these workloads" -> this seems lazy to not have included that in the evaluation of this paper. 
+
+What are "irregular programs"?
+
+"The mapping from the physical address space to the structural address space is cached on- chip only for pages that are resident in the TLB, and the prefetcher updates these caches during long latency TLB misses to effectively hide the latency of accessing off-chip meta-data." is there any case where a long latency TLB miss doesn't occur frequently enough for the updates? Imagine, for example, a perfect TLB? Does that even exist?
+
+
+
+The standard approach (the GHB) stores pointers in the 
+
+One of the primary benefits of the GHB was that it could be used to implement multiple strategies. This paper is saying that although, theoretically, the GHB can be used to localize based on the PC, it would be infeasible to do in practice because the pointer chasing you would have to implement for the linked lists. It suggests instead reordering the linked lists to become arrays in the ISB, so you can PC localize more efficiently. But wouldn't this destroy the benefit of only storing one structure for multiple uses? Is the structural address space suitably useful for applications other than the ISB itself? 
+
+Multiprogramming seems unavoidable, I am glad this paper included it in their evaluation. I feel that any paper that doesn't is incomplete
+
+Minimal power overhead because it is using more memory bandwidth, but also completing the tasks faster (faster execution time). Maybe it is worth looking into how much each operation gets you closer to your end goal (useless operations waste power). Categorizing the operations on a spectrum from critical operation to peripheral operation would be interesting. 
