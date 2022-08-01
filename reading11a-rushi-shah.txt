@@ -1,0 +1,40 @@
+Paper: Learning Memory Access Patterns by Hashemi, Swesky, Smith, Ayers, Litz, Chang, Kozyrakis, Ranganathan
+
+<b>Summary:</b>
+
+This work explores deep learning for memory access patterns to guide prefetchers. It frames traditional address correlation as NLP n-grams. The successor to n-grams in NLP is recurrent neural networks (RNNs), so this work explores RNNs as a drop in replacement for the n-gram models. 
+
+Prefetching is inherently a "regression problem", but the output space is vast and sparse. To make this vast and sparse output space more tractable, this paper leverages "discretization" and frames the problem as a classification problem over the vocabulary of the entire address space rather than a regression problem. The resulting approach is effective in practice and "interpretable", which means the RNN is able to discern semantic information about underlying application. 
+
+<b>My thoughts/questions/extensions:</b>
+
+This work is train-offline and test-online, which is dangerous.
+
+Timeliness answer is streaming the prefetches. Is that viable, especially in the context of expensive computations? What about in the context of the next thing the paper mentions, namely control systems for the aggressiveness of the prefetcher. Is this control system sufficent to solve the problem of accuracy versus coverage? 
+
+The paper mentions how learning memory access traces is a reflection of program behavior. This is related to conversations we have been having about our final project about how address correlation might not generalize to page correlation because program behavior needs a finer granularity at the address level and wouldn't work at the page level.
+
+"Our primary quantization scheme is to therefore create a vocabulary of common addresses during training, and to use this as the set of targets during testing. This reduces the coverage, as there may be addresses at test time that are not seen during training time". Does this mean that if your address is not selected in the vocabulary of addresses during training then you will never attempt to prefetch it? Yikes. 
+
+The paper brings up a good point, namely address space layout randomization. That would only be a problem for offline-trained approaches, right? Was that already a problem for the other static approach we read about, but we just didn't identify it? Would an analagous problem for dynamic approaches be something like the garbage collector? They solve the problem by just predicting deltas, but what about more sophisticated versions of ASLR? 
+
+The paper clusters the address space of a benchmark into local contexts. This seems like an unfair optimization, and the paper correctly identifies that this means the model cannot model the dynamics that cause the program to access different regions of the address space. 
+
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+Deep learning for hardware architecture. Learning memory access patterns to guide prefetchers. 
+
+Traditional prefetchers build NLP n-grams, and a more sophisticated drop in replacement to the n-gram model would be a recurrent neural network.
+
+Prefetching is a "regression problem", but the output space is vast and sparse. This paper "discretizes" the output space which makes it much more tractable. Not only does it work, it also is interpretable (the RNN is able to discern semantic info about underlying application). 
+
+This work is train-offline and test-online, which is dangerous. 
+
+Timeliness answer is streaming. Is that viable?
+
+Control systems for the aggressiveness of the prefetcher that change dynamically
+
+Solved the memory issue because train-offline test-online. But can they meet latency demands? Can they compute fast enough? 
+
+Learning memory access traces is a reflection of program behavior. 

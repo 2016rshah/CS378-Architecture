@@ -1,0 +1,50 @@
+Paper: Post-Silicon CPU Adaptation Made Practical Using Machine-Learning by Tarsa, Chowdhury, Sebot, Chinya, Gaur, Sankaranarayanan, Lin, Chappell, Singhal, and Wang
+
+<b>Summary:</b>
+
+CPUs currently deploy offline-trained machine learning models to adapt runtime behavior based on patterns in event counter data (microarchitecture event counts, etc.). For example, these approaches can turn off clusters of the CPU when the extra performance isn't needed to save power. 
+
+However, these approaches are flawed because the offline-trained models can't be updated after the silicon is printed (because the models leverage custom hardware). The paper suggests a method to leverage existing hardware on the chip to implement ML models. This allows new models to be uploaded with a simple firmware update to adapt to new workloads. 
+
+The paper is evaluated on two metrics: performance per watt (PPW), and service level agreement (SLA) violations. Performance per watt measures if the workload stays the same how many watts does it take to complete. SLA violations measure how performant the implementation is (higher SLA violations means less performant). The paper claims that "Our adaptive CPU improves PPW by 31.4% over a compara- ble non-adaptive CPU on SPEC2017, and exhibits two orders of magnitude fewer Service Level Agreement (SLA) violations than the state-of-the-art." The key insight here is that the models that are adapted based on the workload are more effective than static models, but this is the only approach that can implement adaptive models. 
+
+<b>My thoughts/questions/extensions:</b>
+
+"Capitalizing on this diversity represents an enormous opportunity in general purpose computing, but increases design complexity and cost as team sizes and product lines grow to meet individualized needs. However, an adaptive CPU whose performance characteristics can be adjusted post-silicon with just a firmware patch significantly reduces the difficulty of customizing hardware for individual customers." Rossbach/Shacham (can't remember which, but maybe both?) has a very strong opinion about general purpose computing. In his opinion, there are two ends of the spectrum: people who need performance at any cost and are willing to hand-optimize their code, etc. and people who need the most secure code possible, need their task completed but don't really care how long it takes as long as it is pretty straightforward to program, etc. He claims that we currently optimize for the middle of the spectrum: people who want their code to run reasonably quickly but don't want to hand optimize, etc. 
+
+But he claims that class of users is a myth. Either you are Google and need every computer to run at 100% all the time or you are a voting machine that doesn't need to be fast but needs to be correct. It is unclear to him what customer will be Google one day and a voting machine the next day. However, the paper addresses this concern by saying that the "same data center may require peak performance when demand spikes during the holiday season, but otherwise optimize for PPW throughout the rest of the year to minimize total cost of owner- ship (TCO)". This makes sense to me, too. But it is unclear if buying these adaptive processors is the correct scaling scheme in that scenario. 
+
+This paper seems really good because it is launching a research field. Namely, it tackles the significant implementation barriers that were keeping adaptive chips from being integrated into commercial processors. With those issues addressed in this paper, future papers can concentrate on more effective ways to adapt ML models, etc. So this paper provides a framework for future papers. 
+
+The key insight in this paper was leveraging the existing microcontroller for the ML models. However, I am not sure whether or not this existing microcontroller will be sufficient for future more sophisticated approaches. This is a concern because without that contribution, future papers would not really be able to build off the results of this paper unless they are able to restrict themselves to that microcontroller. 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+
+Primary focus of this work is to reduce the risk of unexpected behaviour when workloads generate unanticipated telemetry
+
+post-silicon means making CPU behaviour updates even after the chip has been printed like you're making a firmware update
+
+statistical blindspots are the primary driver of service level agreement violateions. 
+
+Insights:
+
+use existing microcontrollers as the compute for the neural networks
+
+Two metrics: SLA violations and PPW. Are these standard metrics? 
+
+Post-silicon customization to boost application-specific PPW. 
+
+Cluster-gating: split up the functional units of a CPU into clusters and then turn entire clusters off when not needed to reduce power but retain performance (not novel, just being leveraged here)
+
+Adaptation models: use runtime "telemetry data" (microarchitecture event counts, etc.) to change configurations of the system.
+
+high-performance mode and low-power mode that can be swtiched to in an interval of 10-100k instructions. Existing research rely on new dedicated hardware to determine with ML when to switch modes. We use existing resources with minimal overhead. 
+
+Service Level Agreements determine the performance guarantees they need to provide. If you can meet the SLAs then performance doesn't need to be better than that, is what I understand. 
+
+"Capitalizing on this diversity represents an enormous opportunity in general purpose computing, but increases design complexity and cost as team sizes and product lines grow to meet individualized needs. However, an adaptive CPU whose performance characteristics can be adjusted post-silicon with just a firmware patch significantly reduces the difficulty of customizing hardware for individual customers." Rossbach's observation that people either need performance or don't care about performance at all, there is no in-between general computation person. 
+
+The key benefit of this approach is that using the existing microcontrollers for the model means there is no model-specific circuitry so updates are firmware models not changes in the silicon. 
+
+Offline trained model adaptations that can flash the update onto the chip even after the silicon is printed because it only uses existing hardware. 

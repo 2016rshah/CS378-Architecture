@@ -1,0 +1,30 @@
+Paper: Rethinking Belady's Algorithm to Accommodate Prefetching by Jain and Lin
+
+<b>Summary:</b>
+
+Belady's algorithm is a theoretical optimal solution to the cache replacement policy. However, this algorithm is not necessarily optimal when you draw a distinction between prefetch misses and demand misses. Thus this paper reformulates Belady's MIN algorithm into Demand-MIN which minimizes demand misses. The intuition here is that we don't need to cache things that will be prefetched before they are rereferenced. 
+
+Because this is a theoretical solution, the paper also presents a practical modelling of the algorithm that builds off the ideas of Hawkeye. In other words 
+Belady's-MIN : Hawkeye :: Demand-MIN : Harmony
+
+Belady's-MIN is one algorithm for constructing one of the optimal solutions to the prefetching problem (note that the optimal solutions to the prefetching problem are not unique). Demand-MIN draws a further distinction within this set of possible optimal solutions that is also optimal in that it minimizes demand misses. Both solutions are optimal in the sense that they minimize the number of misses. However, Belady's MIN minimizes memory traffic, and Demand-MIN minimizes demand misses. Therefore they represent a design space with the ideal replacement policy lying somewhere in between. 
+
+<b>My thoughts/questions/extensions:</b>
+
+What about timeliness? The reforumulation of Belady's min prioritizes demand misses because there's no reason to keep lines in the cache that will be prefetched in later. In the paper this is framed as the opportunity cost of a line occupying cache space. But this doesn't address the fact that they might be prefetched too late and only save a cycle or two whereas if you prefetch earlier you will be more timely.
+
+D-P-D. This seems like the case where Demand-MIN will increase memory overhead by evicting the line because it knows it will be re-prefetched even though it will be needed soon afterwards. Is there a way to detect this pattern in particular to reduce the memory traffic while retaining the demand miss minimization? 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+"it minimizes the total number of misses, including those for lines brought in by prefetches, but it does not minimize the number of demand misses." why is it more important to minimize the number of demand misses?
+
+The intuition here is that if something is going to be prefetched anyway, why cache it. We can use that cache space for things that will not be prefetched. If nothing is going to be prefetched, we have to pick a line that is demand accessed in the future, and in that scenario, Belady's MIN already tells us what the optimal decision is.
+
+Lines Evicted per Demand Hit (LED)
+
+Prefetch-Friendly-Lines (line brought in through a demand load but whose next load will be a prefetch) 
+
+I don't really understand how there is a design space between Belady's MIN and Demand-MIN. Isn't Demand-MIN a specific solution fromt the set of optimal solutions that minimizes demand misses? If not, shouldn't it be? 
+
+"UNLIKE MIN, DEMAND-MIN EVICTS ALL *-P INTERVALS": but this is only because the *-P intervals have a high opportunity cost. Cycle-accuracy defines how many cycles something spends in the cache before it is used, coverage. How far before use is something prefetched? How long after it is needed does it arrive? If it is brought in too far before it is needed that is bad (low cycle accuracy). If it is brought in too late after it is needed that is bad (low cycle coverage?). 

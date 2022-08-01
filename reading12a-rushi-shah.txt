@@ -1,0 +1,25 @@
+Paper: PACMan: Prefetch-Aware Cache Management for High Performance Caching by Wu, Jaleel, Martonosi, Steely Jr., and Emer
+
+<b>Summary:</b>
+
+Hardware prefetching and last-level cache management are two independent mechanisms to combat memory latency. However, because they are designed independently, their interaction can introduce performance variability (mainly because replacement policies treat prefetches the same as demand requests which is naive). This paper (1) investigates the interaction of the prefetcher and the cache replacemtn policy and (2) introduces a prefetch-aware cache management technique (PACMan). 
+
+PACman uses set dueling to determine when prefetching is beneficial to the application, but basically just updates the re-reference interval prediction in DRRIP based on whether the incoming cache line is a prefetch or a demand request. They unintentionally summarize well by noting that "PACMan-DYN is essentially a lightweight dynamic method for detcting prefetch-induced cache pollution". 
+
+<b>My thoughts/questions/extensions:</b>
+
+At first this idea seemed really great to me, because it is able to make two components of the architecture talk to each other enough to avoid stepping on each other's toes. I was excited for the idea of a prefetcher-aware cache replacement policy. However, as I continued reading, I realized that the idea was very simple: just treat the rereference interval prediction differently based on whether a line was prefetched or demand requested. 
+
+The introduction claims there are three main contributions of the paper:
+
+(1) performance evaluation of state-of-the-art cache management policies in the presence and absence of hardware prefetching. Maybe useful computations, but not super groundbreaking research or anything. 
+(2) Reduces performance variability. The claim is that server applications need a performance guarantee and can't tolerate variability. But I'm not convinced this is a key limitation of current approaches. 
+(3) PACMan can be built on top of any ordered replacement policy. This also seems like a weak claim because if you say that the specific performance benefits of this implementation are less important than the underlying idea then the underlying idea better be pretty great. But the only idea is that you should replace differently based on how a line got into the cache, which isn't super revolutionary, it just seems like a tweak to existing algorithms. 
+
+Overall I think the paper represents an important direction of work: how do different components of the architecture interact. I think I would "Weak Accept" the paper. It isn't going to win a best paper award any time soon or anything, but the idea is a necessary step and the performance numbers might be sufficient to explain why they only explored such a simple idea. 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+This work seems kind of trivial in terms of implementation. For example, if you've already implemented DDRIP, to implement PACMan on top of it all you have to do is change the interval based on whether or not it is a demand request or a prefetch (we could have done this easily during our homework project). 
+
+"we note that PACMan-DYN is essentially a lightweight dynamic method for detcting prefetch-induced cache pollution"

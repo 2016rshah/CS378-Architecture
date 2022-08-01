@@ -1,0 +1,30 @@
+Paper: Efficient Metadata Management for Irregular Data Prefetching by ??? (Jain and Lin)
+
+<b>Summary:</b>
+
+The ISB tries to hide off-chip meta-data synchronization behind the latency of TLB evictions. It does this because the ISB is implicitly managed by the TLB resident pages. But there are three issues with managing the ISB at the TLB page granularity: 
+1) lots of useless prefetches (pages are too large compared to spatial locality)
+2) doesn't scale to large page sizes (on-chip cache grows with page size)
+3) doesn't work with multilevel TLBs (latency between L1 and L2 is too short; prefetching for L2 requires too much storage)
+
+The key insight to solve these problems is finer-grained caching and prefetching, which leads to a system called the managed ISB (MISB). Metadata is cached at a finer granulartiy using next-line prefetching for structural-to-physical mappings, and bloom filters out requests for addresses that haven't been mapped yet in the structural address space. 
+
+This quote captures the bulk of the paper well: "Conceptually, MISB’s overall training and prediction algorithms are similar to ISB’s, but they differ significantly in the way that MISB manages the movement of metadata between the on-chip metadata caches and off-chip metadata storage."
+
+<b>My thoughts/questions/extensions:</b>
+
+The paper claims that for traditional ISB the "size of the on-chip cache grows with the page size". I don't understand why that is. 
+
+The paper claims that for traditional ISB "if the metadata cache is synchronized with the L2 TLB, then the metadata cache would be impractically large—on the order of 200-400KB." Is this just because the L2 is just a larger cache? What kind of single level cache hierarchy was the original ISB evaluated on? 
+
+Divorcing the ISB from the TLB seems like a good idea, not only because of the benefits mentioned in the paper, but also for the independence of different components of the architecture. 
+
+The paper uses LRU to evict things from the ISB caches. It's caches all the way down, so why not try to use a more sophisticated cache eviction policy to manage the cache rather than the naive LRU. Is there enough potential benefit to justify something so intricate? 
+
+The paper says "Without a metdata cache, MISB cannot hide the latency of all metadata accesses, which severely hurts its performance". What is the worst case scenario for MISB if the meta data cache starts trashing? How confident are we that this won't happen?
+
+Why did the original ISB paper settle on TLB pages as the granularity? That seemed to be out of the blue when I read that paper, too, because no other architecture papers we've read ever really mentioned the TLB until the original ISB paper. 
+
+<b>Unstructured thoughts/personal notes (don't read, only including for completeness sake):</b> 
+
+

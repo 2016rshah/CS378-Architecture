@@ -1,0 +1,134 @@
+==+== ISCA 2019 Paper Review Form
+==-== DO NOT CHANGE LINES THAT START WITH "==+==" UNLESS DIRECTED!
+==-== For further guidance, or to upload this file when you are done, go to:
+==-== https://isca2019.hotcrp.com/offline
+
+==+== =====================================================================
+==+== Begin Review #1000.
+==+== Reviewer: Rushi Shah
+==-== Updated 22 April 2019 10:36:51pm CST
+
+==+== Paper #1000
+==-== Title: Bit-level Perceptron Prediction for Indirect Branches
+
+
+==+== Review Readiness
+==-== Enter "Ready" if the review is ready for others to see: Ready
+
+
+==+== A. Paper summary
+==-== Markdown styling and LaTeX math supported.
+
+This paper uses a perceptron trained on branch histories to predict the lower-level bits of the target address for an indirect branch (branches for virtual method dispatch, switch statements, etc.). The perceptron leads to a bit-level prediction, which is used to select the most promising target candidate for a branch (out of a set of 64 cached targets). This approach has comparable hardware costs to the state of the art, but improves branch prediction performance by 5% (0.193 to 0.183 MPKI). 
+
+==+== B. Strengths
+==-==    What are the paperâ€™s strengths? Just a couple of sentences,
+==-==    please.
+==-== Markdown styling and LaTeX math supported.
+
+	+ Squeezed an impressive performance boost out of the basically-solved field of branch prediction. 
+	+ Leveraged prior work in neural nets in an interesting way (perceptrons for each bit of the target address).
+
+	Perceptrons are simple neurons that can consider a long history to make a 0 or 1 prediction. This is useful for conditional branch prediction, but it is not immediately obvious how to apply this to branch address prediction. This approach assigns one perceptron per lower-level address bit to be predicted. When these bit-level predictions are combined into an address, it might or might not be a valid branch target, so it is used to select an address from a set of 64 likely branch targets.
+
+==+== C. Weaknesses
+==-==    What are the paperâ€™s weaknesses? Just a couple of sentences,
+==-==    please.
+==-== Markdown styling and LaTeX math supported.
+
+	- Unclear if the perceptrons themselves are strictly necessary for the success of the IBTB
+	- "We also plan to explore how BLBP might be used to predict conditional branches as well as indirect branches as VPC does, allowing consolidation of the two structures." makes it seem like this approach is doubling the amount of structures needed for branch prediction even though only 28% of missed branches are indirect.
+
+	This paper could have explored how BLBP could be used to predict conditional branches itself rather than leaving that for future work. It seems like adapting the approach should be relatively straightforward, although perhaps wouldn't lead to strong results. It would have been nice to see preliminary results in this paper, even if further work would be needed to make it beat the state-of-the-art in conditional branches. 
+
+	Clarification is requested later in the review for whether or not the perceptrons were truly an integral component of this approach. 
+
+==+== D. Novelty
+==-== Choices:
+==-==    1. Published before or openly commercialized
+==-==    2. Incremental improvement
+==-==    3. New contribution
+==-==    4. Surprisingly new contribution
+==-== Enter the number of your choice: 3
+
+
+
+==+== E. Writing quality
+==-== Choices:
+==-==    1. Unacceptable
+==-==    2. Needs improvement
+==-==    3. Adequate
+==-==    4. Well-written
+==-==    5. Outstanding
+==-== Enter the number of your choice: 2
+
+
+
+==+== F. Reviewer expertise
+==-== Choices:
+==-==    1. I know nothing about this area
+==-==    2. I have passing familiarity with this area
+==-==    3. I know the material, but am not an expert
+==-==    4. I know a lot about this area
+==-==    5. This is my area
+==-== Enter the number of your choice: 3
+
+
+
+==+== G. Overall merit
+==-== Choices:
+==-==    1. Reject
+==-==    2. Weak reject
+==-==    3. Weak accept
+==-==    4. Accept
+==-==    5. Strong accept
+==-== Enter the number of your choice: 3
+
+
+
+==+== H. Relative position of paper among papers you reviewed
+==-== Choices:
+==-==    1. Bottom 25% of papers you reviewed
+==-==    2. Bottom 25 - 50% of papers you reviewed
+==-==    3. Top 25-50% of papers you reviewed
+==-==    4. Top 25% of papers you reviewed
+==-== Enter the number of your choice: 2
+
+
+
+==+== I. Comments for author
+==-== Markdown styling and LaTeX math supported.
+
+	Section 3.1 header should line break to next column. 
+
+	"Indirect Branch Target Buffer(IBTB)" should be changed to "Indirect Branch Target Buffer (IBTB)" -- notice the space. 
+
+	"Thus each IBTB entry is tagged with 9 bits from the branch PC." should be changed to "Thus, each IBTB entry is tagged with 9 bits from the branch PC." -- notice the comma. 
+
+	"with the trained perceptron than the second target(Dot Product 43)." should be changed to "with the trained perceptron than the second target (DotProduct 43)." -- notice the space. 
+
+	Section 3.4 header, then Algorithm 1, then first line, then page break, then second line is super hard to follow. Break pages, etc., better. 
+
+	Section 3.5 dangling section header
+
+	"Normalizing the trained weight vector(0,6,0,6)" should be changed to "Normalizing
+	the trained weight vector (0,6,0,6)" -- notice the space. 
+
+==+== J. Questions for author's response
+==-==    Specific questions that could affect your accept/reject decision.
+==-==    Remember that the authors have limited space and must respond to
+==-==    all reviewers.
+==-== Markdown styling and LaTeX math supported.
+
+	The main strength of the predictor seems to be the indirect branch target buffer (IBTB). Was the IBTB already leveraged in related work and the main contribution of this paper was to use bit level perceptrons to select from the IBTB more effectively? Or was the IBTB a novel contribution of this paper as well? The existence of the IBTB seems like a more fundamental part of the success of the predictor than the perceptron, so it should be played up if it is novel to this paper. Regardless, the paper should explore the performance of the IBTB without the perceptrons to judge how useful the bit-level predictions themselves are (my intuition is that the bit-level predictions would be extremely noisy so not really a gamechanger in terms of prediction accuracy).
+
+
+==+== K. Comments for PC
+==-== Hidden from authors.
+==-== Markdown styling and LaTeX math supported.
+
+Was this Ishan's paper? 
+
+==+== Scratchpad (for unsaved private notes)
+
+==+== End Review
